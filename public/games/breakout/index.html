@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  html,body{margin:0;height:100%;background:#fff;font-family:Geneva,Verdana,sans-serif;overflow:hidden}
+  #wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%}
+  canvas{border:2px solid #000;image-rendering:pixelated}
+  #msg{font-size:12px;margin-top:6px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c" width="400" height="300"></canvas>
+  <div id="msg">← → or move mouse to play · click to launch</div>
+</div>
+<script>
+const cv = document.getElementById('c'), x = cv.getContext('2d')
+const W = cv.width, H = cv.height
+let paddle = { w: 60, h: 8, x: W/2 - 30 }
+let ball = { x: W/2, y: H-40, dx: 2.2, dy: -2.2, r: 5, live: false }
+let bricks = [], score = 0, lost = false
+const cols = 8, rows = 4, bw = 44, bh = 14, pad = 4, offX = 12, offY = 24
+for (let r=0;r<rows;r++) for (let c=0;c<cols;c++)
+  bricks.push({ x: offX + c*(bw+pad), y: offY + r*(bh+pad), on: true })
+
+addEventListener('mousemove', e => {
+  const rect = cv.getBoundingClientRect()
+  paddle.x = Math.min(W-paddle.w, Math.max(0, e.clientX - rect.left - paddle.w/2))
+})
+addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft') paddle.x = Math.max(0, paddle.x - 18)
+  if (e.key === 'ArrowRight') paddle.x = Math.min(W-paddle.w, paddle.x + 18)
+})
+addEventListener('click', () => { if(lost){reset()} else ball.live = true })
+function reset(){
+  bricks.forEach(b=>b.on=true); score=0; lost=false
+  ball={x:W/2,y:H-40,dx:2.2,dy:-2.2,r:5,live:false}
+}
+
+function step(){
+  x.clearRect(0,0,W,H)
+  // bricks
+  bricks.forEach(b=>{ if(b.on){ x.fillStyle='#000'; x.fillRect(b.x,b.y,bw,bh) }})
+  // paddle
+  x.fillStyle='#000'; x.fillRect(paddle.x, H-16, paddle.w, paddle.h)
+  // ball
+  if(!ball.live) ball.x = paddle.x + paddle.w/2
+  x.beginPath(); x.arc(ball.x, ball.y, ball.r, 0, 7); x.fill()
+
+  if(ball.live){
+    ball.x += ball.dx; ball.y += ball.dy
+    if(ball.x<ball.r||ball.x>W-ball.r) ball.dx*=-1
+    if(ball.y<ball.r) ball.dy*=-1
+    // paddle hit
+    if(ball.y>H-16-ball.r && ball.x>paddle.x && ball.x<paddle.x+paddle.w && ball.dy>0){
+      ball.dy*=-1
+      ball.dx += ((ball.x-(paddle.x+paddle.w/2))/paddle.w)*2
+    }
+    // brick hits
+    bricks.forEach(b=>{
+      if(b.on && ball.x>b.x && ball.x<b.x+bw && ball.y>b.y && ball.y<b.y+bh){
+        b.on=false; ball.dy*=-1; score++
+      }
+    })
+    if(ball.y>H){ lost=true; ball.live=false }
+  }
+  x.font='11px Geneva'; x.fillText('Score: '+score, 8, 14)
+  if(lost){ x.font='16px Geneva'; x.fillText('Game Over — click to retry', 90, H/2) }
+  if(score===bricks.length){ x.font='16px Geneva'; x.fillText('You win! 🎉', 150, H/2) }
+  requestAnimationFrame(step)
+}
+step()
+</script>
+</body>
+</html>
