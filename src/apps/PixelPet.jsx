@@ -414,7 +414,7 @@ export default function PixelPet() {
     ctx.fillStyle = col; ctx.textAlign = align; ctx.textBaseline = 'middle'
     ctx.font = `bold ${size}px monospace`; ctx.fillText(s, x, y); ctx.textAlign = 'left'
   }
-  const drawGame = (ctx, cell, t) => {
+  const drawGame = (ctx, cell, _t) => {
     const g = game.current
     const S = GRID * cell
     if (g.over) {

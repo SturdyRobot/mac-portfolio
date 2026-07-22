@@ -6,7 +6,7 @@ const HOME = 'about:home'
 export default function Browser() {
   const [address, setAddress] = useState('')
   const [view, setView] = useState({ mode: 'home' }) // home | site | notfound
-  const [history, setHistory] = useState([])
+  const [, setHistory] = useState([])
 
   const directory = siteDirectory()
 
