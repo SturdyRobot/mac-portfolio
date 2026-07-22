@@ -30,11 +30,11 @@
   }
   window.addEventListener('resize', fit); fit();
 
-  let snake, dir, next, food, score, dead, tick;
+  let snake, dir, next, food, score, dead, tick, started;
   function reset(){
     snake = [{x:7,y:7},{x:6,y:7},{x:5,y:7}];
     dir = {x:1,y:0}; next = {x:1,y:0};
-    score = 0; dead = false; tick = 0;
+    score = 0; dead = false; tick = 0; started = false;
     placeFood();
   }
   function placeFood(){
@@ -53,6 +53,12 @@
     const k = e.key;
     if(lbActive()) return;
     if(dead && (k==='Enter'||k===' '||k==='z'||k==='x')){ reset(); return; }
+    const isDir = (k==='ArrowUp'||k==='ArrowDown'||k==='ArrowLeft'||k==='ArrowRight');
+    // title screen: any direction or A/Start begins the run
+    if(!started && !dead){
+      if(isDir || k==='Enter'||k===' '||k==='z'||k==='x') started = true;
+      else return;
+    }
     if((k==='ArrowUp')    && dir.y===0) next={x:0,y:-1};
     if((k==='ArrowDown')  && dir.y===0) next={x:0,y:1};
     if((k==='ArrowLeft')  && dir.x===0) next={x:-1,y:0};
@@ -65,7 +71,7 @@
     requestAnimationFrame(loop);
     if(!last) last = t;
     acc += t - last; last = t;
-    if(acc >= STEP){ acc = 0; if(!dead) step(); }
+    if(acc >= STEP){ acc = 0; if(!dead && started) step(); }
     draw();
   }
   function step(){
@@ -100,6 +106,24 @@
     ctx.font = Math.round(cell*0.9)+'px monospace';
     ctx.textBaseline = 'top';
     ctx.fillText(String(score).padStart(3,'0'), ox+2, 2);
+    if(!started && !dead){
+      ctx.fillStyle = 'rgba(6,15,26,0.72)'; ctx.fillRect(0,0,w,h);
+      ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'center';
+      ctx.fillStyle = '#57e389';
+      ctx.font = 'bold '+Math.round(cell*1.7)+'px monospace';
+      ctx.fillText('SNAKE', w/2, h/2 - cell*1.6);
+      ctx.fillStyle = '#9fb6cf'; ctx.font = Math.round(cell*0.8)+'px monospace';
+      ctx.fillText('arrows / D-pad to steer', w/2, h/2 - cell*0.1);
+      ctx.fillText("eat the red, don't bite yourself", w/2, h/2 + cell*0.9);
+      if(Math.floor(Date.now()/430)%2===0){
+        ctx.fillStyle = '#9dffb0'; ctx.font = 'bold '+Math.round(cell*0.95)+'px monospace';
+        ctx.fillText('▶  PRESS  A  TO  START', w/2, h/2 + cell*2.3);
+      }
+      const hiT = window.ArcadeLB && ArcadeLB.top('snake',1)[0];
+      if(hiT){ ctx.fillStyle='#7bd88f'; ctx.font=Math.round(cell*0.75)+'px monospace';
+        ctx.fillText('HI '+String(hiT.score).padStart(5,'0')+' '+hiT.tag, w/2, h/2 + cell*3.5); }
+      ctx.textBaseline = 'top'; ctx.textAlign='left';
+    }
     if(dead){
       ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0,0,w,h);
       ctx.fillStyle = '#ff8a8a'; ctx.textAlign='center';

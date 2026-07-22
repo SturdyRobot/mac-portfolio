@@ -531,23 +531,40 @@ function centerText(msg, col, sub){
   if(sub){ ctx.fillStyle='#dfffe0'; ctx.font='8px monospace'; ctx.fillText(sub, VW/2, VH/2+12); }
   ctx.textAlign='left';
 }
+// text with a 1px dark drop-shadow, so it reads against the jungle
+function shText(t, cx, cy, fill, shadow){
+  ctx.fillStyle = shadow || 'rgba(0,0,0,.55)';
+  ctx.fillText(t, cx+1, cy+1);
+  ctx.fillStyle = fill;
+  ctx.fillText(t, cx, cy);
+}
 function titleScreen(){
   drawTrees();
   ctx.fillStyle='#5a3a1e'; ctx.fillRect(0,GROUND,VW,VH-GROUND);
   ctx.fillStyle='#3fa35a'; ctx.fillRect(0,GROUND,VW,3);
-  ctx.fillStyle='#ffd23f'; ctx.font='bold 17px monospace'; ctx.textAlign='center';
-  ctx.fillText('JUNGLE RUN', VW/2, 40);
-  ctx.fillStyle='#7bd88f'; ctx.font='8px monospace';
-  ctx.fillText('a pitfall tribute', VW/2, 55);
-  ctx.fillStyle='#dfffe0'; ctx.font='8px monospace';
-  ctx.fillText('D-PAD move    A jump', VW/2, 78);
-  ctx.fillText('hop the gators, swing', VW/2, 90);
-  ctx.fillText('the vines, dodge it all!', VW/2, 100);
-  ctx.fillStyle='#ffd23f';
-  ctx.fillText('PRESS  A  TO  START', VW/2, 116);
+
+  // dim banner so the text pops off the trees
+  ctx.fillStyle='rgba(6,20,12,.55)'; ctx.fillRect(0,20,VW,86);
+  ctx.fillStyle='rgba(255,210,63,.9)'; ctx.fillRect(0,20,VW,2);
+  ctx.fillStyle='rgba(255,210,63,.9)'; ctx.fillRect(0,104,VW,2);
+
+  ctx.textAlign='center';
+  ctx.font='bold 17px monospace';
+  shText('JUNGLE RUN', VW/2, 40, '#ffd23f');
+  ctx.font='8px monospace';
+  shText('a pitfall tribute', VW/2, 54, '#7bd88f');
+  shText('D-PAD move    A jump', VW/2, 76, '#dfffe0');
+  shText('hop the gators, swing', VW/2, 88, '#bfeecb');
+  shText('the vines, dodge it all!', VW/2, 98, '#bfeecb');
+
+  // blinking start prompt
+  if(Math.floor(Date.now()/430)%2===0){
+    ctx.font='bold 9px monospace';
+    shText('▶  PRESS  A  TO  START', VW/2, 120, '#ffe98a');
+  }
   const hi = window.ArcadeLB && ArcadeLB.top('jungle',1)[0];
-  if(hi){ ctx.fillStyle='#7bd88f'; ctx.font='8px monospace';
-    ctx.fillText('HI '+String(hi.score).padStart(5,'0')+'  '+hi.tag, VW/2, 130); }
+  if(hi){ ctx.font='8px monospace';
+    shText('HI '+String(hi.score).padStart(5,'0')+'  '+hi.tag, VW/2, 134, '#7bd88f'); }
   ctx.textAlign='left';
   player={x:VW/2-4,y:GROUND-PH,face:1,onGround:true,vx:0,run:0,onVine:null}; blink=0;
   drawPlayer();

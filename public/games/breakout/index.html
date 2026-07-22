@@ -2,84 +2,198 @@
 <html>
 <head>
 <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Breakout</title>
 <style>
-  html,body{margin:0;height:100%;background:#fff;font-family:Geneva,Verdana,sans-serif;overflow:hidden}
-  #wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%}
-  canvas{border:2px solid #000;image-rendering:pixelated}
-  #msg{font-size:12px;margin-top:6px}
+  :root{ --accent:#4db1ff; }
+  *{ box-sizing:border-box }
+  html,body{ margin:0;height:100%;overflow:hidden;
+    background:radial-gradient(120% 90% at 50% 0%, #14203c 0%, #0a1122 55%, #060a14 100%);
+    font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace; color:#dce6f5 }
+  #wrap{ display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:14px;padding:16px }
+  #stage{ position:relative;width:400px;max-width:100% }
+  canvas{ display:block;width:100%;height:auto;border-radius:12px;
+    background:linear-gradient(#0e1830,#0a1020);
+    box-shadow:0 18px 50px rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.06);
+    image-rendering:pixelated }
+  /* overlays sit exactly over the canvas */
+  .overlay{ position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;border-radius:12px;padding:22px;
+    background:radial-gradient(120% 90% at 50% 30%, rgba(16,26,50,.62), rgba(6,10,20,.86));
+    backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);transition:opacity .25s ease }
+  .overlay.hidden{ opacity:0;pointer-events:none }
+  .title{ font-size:40px;font-weight:800;letter-spacing:8px;margin:0;
+    background:linear-gradient(#ffffff,#9fd0ff);-webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 4px 22px rgba(77,177,255,.35) }
+  .sub{ margin:10px 0 0;font-size:12px;letter-spacing:1px;color:#8ea6c8 }
+  .keys{ margin:16px 0 0;font-size:11px;letter-spacing:.5px;color:#7c8db0;line-height:1.9 }
+  .pill{ margin-top:20px;display:inline-block;padding:11px 22px;border-radius:999px;
+    background:linear-gradient(var(--accent),#2f83d6);color:#fff;font-size:11px;letter-spacing:2px;text-transform:uppercase;
+    box-shadow:0 6px 18px rgba(77,177,255,.4);animation:pulse 1.7s ease-in-out infinite }
+  .big{ font-size:30px;font-weight:800;letter-spacing:4px;margin:0 }
+  .big.win{ background:linear-gradient(#fff,#8ef0b4);-webkit-background-clip:text;background-clip:text;color:transparent }
+  .stat{ margin-top:12px;font-size:13px;color:#b7c6df;letter-spacing:1px }
+  .stat b{ color:#fff }
+  .hi{ margin-top:4px;font-size:11px;color:#8ea6c8;letter-spacing:1px }
+  @keyframes pulse{ 0%,100%{ transform:scale(1);opacity:1 } 50%{ transform:scale(1.05);opacity:.86 } }
+  #msg{ font-size:11px;letter-spacing:.5px;color:#6f81a4 }
 </style>
 </head>
 <body>
 <div id="wrap">
-  <canvas id="c" width="400" height="300"></canvas>
-  <div id="msg">← → or move mouse to play · click to launch</div>
+  <div id="stage">
+    <canvas id="c" width="400" height="300"></canvas>
+
+    <div id="title" class="overlay">
+      <h1 class="title">BREAKOUT</h1>
+      <p class="sub">Clear the wall. Don&rsquo;t drop the ball.</p>
+      <div class="keys">◀ ▶ arrows &nbsp;·&nbsp; or move the mouse<br>bounce it back, chip away every brick</div>
+      <div class="pill">click or press ▶ to start</div>
+    </div>
+
+    <div id="over" class="overlay hidden">
+      <h2 id="overBig" class="big">GAME OVER</h2>
+      <div class="stat">Score <b id="overScore">0</b></div>
+      <div class="hi" id="overHi"></div>
+      <div class="pill">click to play again</div>
+    </div>
+  </div>
+  <div id="msg">◀ ▶ or move mouse to play · click to launch the ball</div>
 </div>
+
 <script src="/arcade-leaderboard.js?v=2"></script>
 <script>
 const cv = document.getElementById('c'), x = cv.getContext('2d')
 const W = cv.width, H = cv.height
+const titleEl = document.getElementById('title')
+const overEl  = document.getElementById('over')
 const lbActive = () => window.ArcadeLB && ArcadeLB.active
+
+// title | serve | play | lost | won
+let state = 'title'
 let submitted = false
+
 function endGame(){
   if(submitted) return; submitted = true
   const pts = score*10
   if(window.ArcadeLB) ArcadeLB.report('breakout', pts)
 }
 try { window.ArcadeLB && ArcadeLB.refresh('breakout') } catch(e){}
-let paddle = { w: 60, h: 8, x: W/2 - 30 }
-let ball = { x: W/2, y: H-40, dx: 2.2, dy: -2.2, r: 5, live: false }
-let bricks = [], score = 0, lost = false
-const cols = 8, rows = 4, bw = 44, bh = 14, pad = 4, offX = 12, offY = 24
-for (let r=0;r<rows;r++) for (let c=0;c<cols;c++)
-  bricks.push({ x: offX + c*(bw+pad), y: offY + r*(bh+pad), on: true })
 
+const paddle = { w: 62, h: 9, x: W/2 - 31 }
+let ball = { x: W/2, y: H-40, dx: 2.4, dy: -2.4, r: 5, live: false }
+let bricks = [], score = 0
+
+const cols = 8, rows = 4, bw = 44, bh = 15, pad = 4, offX = 12, offY = 30
+// warm→cool by row, like the classic
+const ROW_COLORS = ['#ff5b6e', '#ff9f43', '#ffd23f', '#57e389']
+for (let r=0;r<rows;r++) for (let c=0;c<cols;c++)
+  bricks.push({ x: offX + c*(bw+pad), y: offY + r*(bh+pad), on: true, row: r })
+
+function newBoard(){
+  bricks.forEach(b=>b.on=true); score=0; submitted=false
+  ball = { x:W/2, y:H-40, dx:2.4, dy:-2.4, r:5, live:false }
+}
+
+// ── input ──
 addEventListener('mousemove', e => {
   const rect = cv.getBoundingClientRect()
-  paddle.x = Math.min(W-paddle.w, Math.max(0, e.clientX - rect.left - paddle.w/2))
+  const scale = W / rect.width
+  paddle.x = Math.min(W-paddle.w, Math.max(0, (e.clientX - rect.left)*scale - paddle.w/2))
 })
 addEventListener('keydown', e => {
-  if (e.key === 'ArrowLeft') paddle.x = Math.max(0, paddle.x - 18)
-  if (e.key === 'ArrowRight') paddle.x = Math.min(W-paddle.w, paddle.x + 18)
+  if (e.key === 'ArrowLeft')  paddle.x = Math.max(0, paddle.x - 20)
+  if (e.key === 'ArrowRight') paddle.x = Math.min(W-paddle.w, paddle.x + 20)
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') primary()
 })
-addEventListener('click', () => { if(lbActive()) return; if(lost){reset()} else ball.live = true })
-function reset(){
-  bricks.forEach(b=>b.on=true); score=0; lost=false; submitted=false
-  ball={x:W/2,y:H-40,dx:2.2,dy:-2.2,r:5,live:false}
+addEventListener('click', primary)
+
+function primary(){
+  if(lbActive()) return
+  if(state === 'title' || state === 'serve'){ state='play'; ball.live=true; show(titleEl,false) }
+  else if(state === 'play' && !ball.live){ ball.live = true }
+  else if(state === 'lost' || state === 'won'){ newBoard(); state='play'; ball.live=true; show(overEl,false) }
+}
+function show(el, on){ el.classList.toggle('hidden', !on) }
+
+function loseBall(){
+  state='lost'; ball.live=false; endGame()
+  document.getElementById('overBig').textContent = 'GAME OVER'
+  document.getElementById('overBig').classList.remove('win')
+  document.getElementById('overScore').textContent = score
+  const hi = window.ArcadeLB && ArcadeLB.top('breakout',1)[0]
+  document.getElementById('overHi').textContent = hi ? ('HI  ' + hi.score + '  ' + hi.tag) : ''
+  show(overEl, true)
+}
+function winBoard(){
+  state='won'; ball.live=false; endGame()
+  const el = document.getElementById('overBig')
+  el.textContent = 'YOU WIN!'; el.classList.add('win')
+  document.getElementById('overScore').textContent = score
+  document.getElementById('overHi').textContent = ''
+  show(overEl, true)
+}
+
+function roundRect(px,py,w,h,r){
+  x.beginPath()
+  x.moveTo(px+r,py); x.arcTo(px+w,py,px+w,py+h,r); x.arcTo(px+w,py+h,px,py+h,r)
+  x.arcTo(px,py+h,px,py,r); x.arcTo(px,py,px+w,py,r); x.closePath()
 }
 
 function step(){
   x.clearRect(0,0,W,H)
-  // bricks
-  bricks.forEach(b=>{ if(b.on){ x.fillStyle='#000'; x.fillRect(b.x,b.y,bw,bh) }})
-  // paddle
-  x.fillStyle='#000'; x.fillRect(paddle.x, H-16, paddle.w, paddle.h)
-  // ball
-  if(!ball.live) ball.x = paddle.x + paddle.w/2
-  x.beginPath(); x.arc(ball.x, ball.y, ball.r, 0, 7); x.fill()
 
-  if(ball.live){
+  // bricks — colored, softly rounded, with a top highlight
+  bricks.forEach(b=>{
+    if(!b.on) return
+    x.fillStyle = ROW_COLORS[b.row]
+    roundRect(b.x, b.y, bw, bh, 3); x.fill()
+    x.fillStyle = 'rgba(255,255,255,.22)'
+    roundRect(b.x+2, b.y+2, bw-4, 3, 1.5); x.fill()
+  })
+
+  // paddle
+  x.save()
+  x.shadowColor = 'rgba(77,177,255,.7)'; x.shadowBlur = 12
+  x.fillStyle = '#4db1ff'
+  roundRect(paddle.x, H-18, paddle.w, paddle.h, 4); x.fill()
+  x.restore()
+
+  // ball
+  if(!ball.live && state!=='lost' && state!=='won') ball.x = paddle.x + paddle.w/2
+  x.save()
+  x.shadowColor = 'rgba(255,255,255,.85)'; x.shadowBlur = 12
+  x.fillStyle = '#eef4ff'
+  x.beginPath(); x.arc(ball.x, ball.y, ball.r, 0, 7); x.fill()
+  x.restore()
+
+  if(state==='play' && ball.live){
     ball.x += ball.dx; ball.y += ball.dy
     if(ball.x<ball.r||ball.x>W-ball.r) ball.dx*=-1
     if(ball.y<ball.r) ball.dy*=-1
-    // paddle hit
-    if(ball.y>H-16-ball.r && ball.x>paddle.x && ball.x<paddle.x+paddle.w && ball.dy>0){
+    // paddle
+    if(ball.y>H-18-ball.r && ball.x>paddle.x && ball.x<paddle.x+paddle.w && ball.dy>0){
       ball.dy*=-1
-      ball.dx += ((ball.x-(paddle.x+paddle.w/2))/paddle.w)*2
+      ball.dx += ((ball.x-(paddle.x+paddle.w/2))/paddle.w)*2.4
+      ball.dx = Math.max(-4.2, Math.min(4.2, ball.dx))
     }
-    // brick hits
+    // bricks
     bricks.forEach(b=>{
       if(b.on && ball.x>b.x && ball.x<b.x+bw && ball.y>b.y && ball.y<b.y+bh){
         b.on=false; ball.dy*=-1; score++
       }
     })
-    if(ball.y>H){ lost=true; ball.live=false; endGame() }
-    if(score===bricks.length){ endGame() }
+    if(ball.y>H) loseBall()
+    if(score===bricks.length) winBoard()
   }
-  x.font='11px Geneva'; x.fillText('Score: '+score, 8, 14)
+
+  // HUD
+  x.fillStyle = '#dce6f5'; x.font = 'bold 13px "SF Mono",ui-monospace,Menlo,monospace'
+  x.textAlign = 'left'
+  x.fillText('SCORE ' + String(score).padStart(3,'0'), 10, 19)
   const hi = window.ArcadeLB && ArcadeLB.top('breakout',1)[0]
-  if(lost){ x.font='16px Geneva'; x.fillText('Game Over — click to retry', 90, H/2)
-    if(hi){ x.font='12px Geneva'; x.fillText('HI '+hi.score+' '+hi.tag, 150, H/2+22) } }
-  if(score===bricks.length){ x.font='16px Geneva'; x.fillText('You win! 🎉', 150, H/2) }
+  if(hi){ x.textAlign='right'; x.fillStyle='#8ea6c8'; x.fillText('HI ' + hi.score, W-10, 19); x.textAlign='left' }
+
   requestAnimationFrame(step)
 }
 step()
