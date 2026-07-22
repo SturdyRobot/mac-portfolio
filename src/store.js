@@ -1,3 +1,4 @@
+// @ts-check
 import { create } from 'zustand'
 import { getApp } from './apps.js'
 import { applyTheme, DEFAULT_THEME } from './themes.js'
@@ -11,7 +12,10 @@ const savedTheme =
   DEFAULT_THEME
 
 // A tiny window manager. Each open window is one entry here.
-export const useOS = create((set, get) => ({
+export const useOS = create(
+  /** @type {import('zustand').StateCreator<import('./types').OSState>} */
+  ((set, get) => ({
+  /** @type {import('./types').WinInstance[]} */
   windows: [],
 
   // ─── Appearance ───
@@ -158,4 +162,4 @@ export const useOS = create((set, get) => ({
         }
       }),
     })),
-}))
+})))

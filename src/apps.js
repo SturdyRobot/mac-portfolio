@@ -1,3 +1,4 @@
+// @ts-check
 // ═══════════════════════════════════════════════════════════════════
 //  THE APP MANIFEST
 //  This is the ONLY file you edit to add new work to your desktop.
@@ -28,6 +29,7 @@ import HighScores from './apps/HighScores.jsx'
 import StartHere from './apps/StartHere.jsx'
 import Terminal from './apps/Terminal.jsx'
 
+/** @type {import('./types').AppManifest[]} */
 export const apps = [
   {
     id: 'starthere',
@@ -195,4 +197,5 @@ export const apps = [
   },
 ]
 
+/** @param {string} id */
 export const getApp = (id) => apps.find((a) => a.id === id)
