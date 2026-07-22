@@ -1,0 +1,7 @@
+# Keep the leaderboard client fresh — it ships new features often, so don't
+# let browsers hold a week-old copy (default Hostinger static cache is 7 days).
+<IfModule mod_headers.c>
+  <FilesMatch "arcade-leaderboard\.js$">
+    Header set Cache-Control "no-cache, must-revalidate, max-age=0"
+  </FilesMatch>
+</IfModule>

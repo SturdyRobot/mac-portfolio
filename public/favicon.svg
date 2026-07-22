@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" rx="6" fill="#c96a2b"/>
+  <!-- classic Macintosh body -->
+  <rect x="7" y="5" width="18" height="22" rx="2" fill="#e9e2d0"/>
+  <rect x="7" y="5" width="18" height="22" rx="2" fill="none" stroke="#4a4034" stroke-width="1"/>
+  <!-- screen -->
+  <rect x="9" y="7" width="14" height="10" fill="#2f6b4f"/>
+  <rect x="10" y="8" width="12" height="8" fill="#57e389"/>
+  <!-- tiny smiley face on screen -->
+  <rect x="12" y="10" width="2" height="2" fill="#173d2b"/>
+  <rect x="18" y="10" width="2" height="2" fill="#173d2b"/>
+  <rect x="12" y="13" width="8" height="1" fill="#173d2b"/>
+  <rect x="13" y="14" width="6" height="1" fill="#173d2b"/>
+  <!-- disk slot + vents -->
+  <rect x="18" y="19" width="5" height="1.5" fill="#8a8072"/>
+  <rect x="9" y="19" width="6" height="1" fill="#b7ad9a"/>
+  <rect x="9" y="21" width="6" height="1" fill="#b7ad9a"/>
+  <rect x="9" y="23" width="6" height="1" fill="#b7ad9a"/>
+</svg>
