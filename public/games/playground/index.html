@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RC PLAYGROUND</title>
+<style>
+  html,body{margin:0;height:100%;background:#0e1524;overflow:hidden;font-family:'Silkscreen','Courier New',monospace}
+  #wrap{position:relative;width:100%;height:100%}
+  canvas{display:block;width:100%;height:100%}
+  #hud{position:absolute;inset:0;pointer-events:none;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.5)}
+  #laps{position:absolute;left:12px;top:10px;background:rgba(8,14,24,.42);border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:8px 12px;min-width:118px}
+  .lap-row{display:flex;justify-content:space-between;gap:16px;font-size:12px;line-height:1.9;color:#cfe6ff}
+  .lap-row span{opacity:.72;letter-spacing:1px}
+  .lap-row b{font-variant-numeric:tabular-nums}
+  .lap-row.best b{color:#8ef0a6}
+  #lapCur{color:#ffe14d}
+  #speed{position:absolute;right:12px;bottom:10px;font-size:26px;font-weight:bold;color:#ffe14d}
+  #speed small{font-size:11px;color:#cfefff}
+  #tip{position:absolute;left:12px;bottom:10px;font-size:11px;color:#dfeeff;line-height:1.7}
+  #center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,rgba(6,12,22,.10) 0%,rgba(6,12,22,.5) 100%)}
+  .intro-card{text-align:center;padding:24px 34px 22px;border-radius:16px;background:rgba(12,18,30,.5);border:1px solid rgba(255,255,255,.14);box-shadow:0 14px 46px rgba(0,0,0,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+  #title{font-size:26px;letter-spacing:4px;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.5)}
+  #sub{color:#b9cfe6;font-size:12.5px;line-height:1.85;margin-top:12px}
+  .start-pill{margin-top:18px;display:inline-block;padding:9px 20px;border-radius:999px;background:linear-gradient(#ff6274,#e0384b);color:#fff;font-size:11px;letter-spacing:2px;text-transform:uppercase;box-shadow:0 5px 16px rgba(224,56,75,.45);animation:pulse 1.7s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  .hidden{display:none!important}
+  #err{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#ff8a8a;font-size:13px;text-align:center;padding:20px}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c"></canvas>
+  <div id="hud">
+    <div id="laps">
+      <div class="lap-row"><span>LAP</span><b id="lapCur">0.00</b></div>
+      <div class="lap-row best"><span>BEST</span><b id="lapBest">--</b></div>
+      <div class="lap-row"><span>LAST</span><b id="lapLast">--</b></div>
+    </div>
+    <div id="speed">0<small> KM/H</small></div>
+    <div id="tip">◀ ▶ steer · ▲ gas · ▼ reverse<br>SPACE brake · R restart lap</div>
+    <div id="center">
+      <div class="intro-card">
+        <div id="title">RC TIME TRIAL</div>
+        <div id="sub">Lap the circuit and beat your best time.<br>Jumps, a boost pad and a rough patch along the way.</div>
+        <div class="start-pill">▲&nbsp;◀&nbsp;▶&nbsp;&nbsp;press to start</div>
+      </div>
+    </div>
+  </div>
+  <div id="err" class="hidden"></div>
+</div>
+
+<script type="module">
+import * as THREE from './three.module.js'
+import * as CANNON from './cannon-es.js'
+
+const canvas = document.getElementById('c')
+const wrap = document.getElementById('wrap')
+const hudSpeed = document.getElementById('speed')
+const centerEl = document.getElementById('center')
+const hudLapCur = document.getElementById('lapCur')
+const hudLapBest = document.getElementById('lapBest')
+const hudLapLast = document.getElementById('lapLast')
+
+try {
+// ── tuning ──
+const GRAVITY = 20        // world gravity
+const ENGINE = 7400       // forward push (N)
+const REVERSE = 3800      // reverse push (N)
+const GRIP = 0.17         // how hard we kill sideways slide (0..1) — our fake tyres
+const MAXSPEED = 33       // top speed (m/s) ≈ 118 km/h
+const TURN = 2.3          // yaw rate when steering (rad/s at full grip)
+const AIR = 0.09          // in-air flip/roll authority
+
+// ── three ──
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
+renderer.shadowMap.enabled = true
+renderer.shadowMap.type = THREE.PCFSoftShadowMap
+renderer.outputColorSpace = THREE.SRGBColorSpace
+const scene = new THREE.Scene()
+
+// soft vertical gradient sky (canvas texture) — reads far nicer than a flat colour
+const skyCanvas = document.createElement('canvas'); skyCanvas.width = 4; skyCanvas.height = 256
+{
+  const g = skyCanvas.getContext('2d'); const grad = g.createLinearGradient(0, 0, 0, 256)
+  grad.addColorStop(0, '#2f7bd6'); grad.addColorStop(0.55, '#8fcaff'); grad.addColorStop(1, '#dff2ff')
+  g.fillStyle = grad; g.fillRect(0, 0, 4, 256)
+}
+const skyTex = new THREE.CanvasTexture(skyCanvas); skyTex.colorSpace = THREE.SRGBColorSpace
+scene.background = skyTex
+scene.fog = new THREE.Fog(0xdff2ff, 110, 380)
+
+const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 700)
+camera.position.set(0, 10, -16)
+
+scene.add(new THREE.HemisphereLight(0xcfe8ff, 0x4c7a3f, 0.85))
+scene.add(new THREE.AmbientLight(0xffffff, 0.22))
+const sun = new THREE.DirectionalLight(0xfff4da, 1.55)
+sun.position.set(40, 72, 26); sun.castShadow = true
+sun.shadow.mapSize.set(1024, 1024)
+sun.shadow.camera.near = 1; sun.shadow.camera.far = 240
+sun.shadow.camera.left = -75; sun.shadow.camera.right = 75
+sun.shadow.camera.top = 75; sun.shadow.camera.bottom = -75
+sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.02
+scene.add(sun); scene.add(sun.target)
+
+const groundMesh = new THREE.Mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshStandardMaterial({ color: 0x64b855, roughness: 1, metalness: 0 }))
+groundMesh.rotation.x = -Math.PI / 2; groundMesh.receiveShadow = true; scene.add(groundMesh)
+const grid = new THREE.GridHelper(900, 180, 0x4f9a55, 0x57a862)
+grid.material.transparent = true; grid.material.opacity = 0.3; scene.add(grid)
+
+// ── physics world ──
+const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -GRAVITY, 0) })
+world.broadphase = new CANNON.SAPBroadphase(world)
+world.defaultContactMaterial.friction = 0.4        // crates & balls grip and settle
+world.defaultContactMaterial.restitution = 0.1
+
+// cannon's box-on-box friction pins a sliding box stone dead, so the car rides on a
+// FRICTIONLESS contact with the ground/ramps and we fake tyre grip in drive() instead.
+const groundMat = new CANNON.Material('ground')
+const carMat = new CANNON.Material('car')
+world.addContactMaterial(new CANNON.ContactMaterial(carMat, groundMat, { friction: 0, restitution: 0.12 }))
+
+// a big flat box (not an infinite Plane) — cannon's raycast can't hit a Plane, and
+// our ground-probe ray needs a solid to land on. Top sits at y=0 under the grass mesh.
+const groundBody = new CANNON.Body({ mass: 0, material: groundMat, shape: new CANNON.Box(new CANNON.Vec3(300, 1, 300)) })
+groundBody.position.set(0, -1, 0)
+world.addBody(groundBody)
+
+// sync helpers
+const dyn = []   // { mesh, body }
+function link(mesh, body) { scene.add(mesh); world.addBody(body); dyn.push({ mesh, body }) }
+function sync() { for (const { mesh, body } of dyn) { mesh.position.copy(body.position); mesh.quaternion.copy(body.quaternion) } }
+
+// ── the RC car: one rigid box we push around (it can flip, tumble & smash things) ──
+const carBody = new CANNON.Body({ mass: 120, material: carMat, linearDamping: 0.02, angularDamping: 0.3 })
+carBody.addShape(new CANNON.Box(new CANNON.Vec3(1, 0.5, 1.8)))
+carBody.position.set(0, 1.2, 0)
+carBody.collisionFilterGroup = 2   // its own group so the ground-ray can ignore it
+carBody.collisionFilterMask = -1
+world.addBody(carBody)
+
+// ── the RC rock-crawler ──
+// low red body + tube roll-cage + roof light bar + big red-rim tyres, built from
+// primitives. Local y = -0.5 is the ground (the physics box rests bottom-on-floor).
+const car = new THREE.Group()
+const redMat   = new THREE.MeshStandardMaterial({ color: 0xd11f2c, roughness: 0.4, metalness: 0.2, flatShading: true })
+const redDark  = new THREE.MeshStandardMaterial({ color: 0x8f1620, roughness: 0.5, metalness: 0.2, flatShading: true })
+const cageMat  = new THREE.MeshStandardMaterial({ color: 0x17171c, roughness: 0.45, metalness: 0.5, flatShading: true })
+const blackMat = new THREE.MeshStandardMaterial({ color: 0x0d0d11, roughness: 0.7, metalness: 0.2, flatShading: true })
+const seatMat  = new THREE.MeshStandardMaterial({ color: 0x26262c, roughness: 0.8, metalness: 0.1, flatShading: true })
+const lensMat  = new THREE.MeshStandardMaterial({ color: 0xfff4cf, emissive: 0xffe89a, emissiveIntensity: 0.7, roughness: 0.3 })
+const shockMat = new THREE.MeshStandardMaterial({ color: 0xef3b46, roughness: 0.4, metalness: 0.3 })
+
+// a round tube between two local points — the whole cage and the shocks use this
+const _up = new THREE.Vector3(0, 1, 0)
+function tube(ax, ay, az, bx, by, bz, r, mat) {
+  const a = new THREE.Vector3(ax, ay, az), b = new THREE.Vector3(bx, by, bz)
+  const d = new THREE.Vector3().subVectors(b, a)
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 8), mat)
+  m.position.copy(a).addScaledVector(d, 0.5)
+  m.quaternion.setFromUnitVectors(_up, d.clone().normalize())
+  return m
+}
+// a coil-over shock: a shaft wrapped in a visible spring, oriented between two points
+function makeShock(ax, ay, az, bx, by, bz) {
+  const g = new THREE.Group()
+  const a = new THREE.Vector3(ax, ay, az), b = new THREE.Vector3(bx, by, bz)
+  const d = new THREE.Vector3().subVectors(b, a), len = d.length()
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, len, 6), cageMat)
+  shaft.position.y = len / 2; g.add(shaft)
+  const coils = 7
+  for (let i = 0; i < coils; i++) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.03, 6, 10), shockMat)
+    ring.rotation.x = Math.PI / 2
+    ring.position.y = len * 0.15 + (i / (coils - 1)) * len * 0.6
+    g.add(ring)
+  }
+  g.position.copy(a)
+  g.quaternion.setFromUnitVectors(_up, d.clone().normalize())
+  return g
+}
+// everything except the wheels rides on the suspension, so it lives in `chassis`,
+// which the loop springs up/down and leans relative to the car body
+const chassis = new THREE.Group(); car.add(chassis)
+const add = (...xs) => chassis.add(...xs)
+
+// body panels
+const underbody = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.18, 3.0), blackMat); underbody.position.set(0, -0.3, 0)
+const tub  = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.42, 2.3), redMat);  tub.position.set(0, -0.04, -0.15)
+const nose = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.3, 1.0), redMat);  nose.position.set(0, -0.12, 1.35); nose.rotation.x = -0.14
+const deck = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.34, 0.95), redMat); deck.position.set(0, 0.12, -1.3)
+const beltL = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.5, 2.2), redDark); beltL.position.set(-0.77, -0.02, -0.1)
+const beltR = beltL.clone(); beltR.position.x = 0.77
+add(underbody, tub, nose, deck, beltL, beltR)
+
+// open cockpit: two proper bucket seats (cushion, contoured back, bolsters, headrest)
+const seatShell = new THREE.MeshStandardMaterial({ color: 0x1b1b20, roughness: 0.75, metalness: 0.1, flatShading: true })
+const seatTrim = new THREE.MeshStandardMaterial({ color: 0xd11f2c, roughness: 0.5, metalness: 0.15, flatShading: true })
+function makeSeat(x, z) {
+  const g = new THREE.Group()
+  const cushion = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.11, 0.42), seatShell); cushion.position.set(0, 0.06, 0.02); cushion.rotation.x = -0.06
+  const back = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.52, 0.11), seatShell); back.position.set(0, 0.34, -0.18); back.rotation.x = 0.14
+  const bolL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.46, 0.16), seatTrim); bolL.position.set(-0.15, 0.32, -0.14); bolL.rotation.x = 0.14
+  const bolR = bolL.clone(); bolR.position.x = 0.15
+  const wingL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.2, 0.16), seatShell); wingL.position.set(-0.15, 0.12, 0.06)
+  const wingR = wingL.clone(); wingR.position.x = 0.15
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.16, 0.09), seatShell); head.position.set(0, 0.6, -0.22); head.rotation.x = 0.1
+  g.add(cushion, back, bolL, bolR, wingL, wingR, head)
+  g.position.set(x, 0.12, z)
+  return g
+}
+add(makeSeat(-0.3, -0.35), makeSeat(0.3, -0.35))
+
+// steering wheel in front of the driver
+const stColumn = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.34, 6), cageMat)
+stColumn.position.set(-0.3, 0.32, 0.06); stColumn.rotation.x = 1.15
+const stWheel = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.028, 6, 14), blackMat)
+stWheel.position.set(-0.3, 0.43, 0.22); stWheel.rotation.x = 0.42
+add(stColumn, stWheel)
+
+// forward-facing headlights on the nose
+const hlMat = new THREE.MeshStandardMaterial({ color: 0xfff6d8, emissive: 0xffe6a0, emissiveIntensity: 0.85, roughness: 0.3 })
+const hlL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.06, 12), hlMat); hlL.rotation.x = Math.PI / 2; hlL.position.set(-0.42, -0.04, 1.82)
+const hlR = hlL.clone(); hlR.position.x = 0.42
+add(hlL, hlR)
+
+// front + rear tube bumpers
+const fBump = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.16, 0.18), blackMat); fBump.position.set(0, -0.24, 1.66)
+const rBump = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.16, 0.18), blackMat); rBump.position.set(0, -0.18, -1.72)
+add(fBump, rBump)
+
+// roll cage
+const CR = 0.06
+add(tube(-0.62, -0.05, 1.05, -0.62, -0.05, -1.5, CR, cageMat))   // lower side rails
+add(tube( 0.62, -0.05, 1.05,  0.62, -0.05, -1.5, CR, cageMat))
+add(tube(-0.6, -0.05, 0.9, -0.5, 0.72, 0.35, CR, cageMat))       // front A-pillars
+add(tube( 0.6, -0.05, 0.9,  0.5, 0.72, 0.35, CR, cageMat))
+add(tube(-0.5, 0.72, 0.35, 0.5, 0.72, 0.35, CR, cageMat))        // windshield rail
+add(tube(-0.62, -0.05, -0.7, -0.55, 0.82, -0.7, CR, cageMat))    // main hoop
+add(tube( 0.62, -0.05, -0.7,  0.55, 0.82, -0.7, CR, cageMat))
+add(tube(-0.55, 0.82, -0.7, 0.55, 0.82, -0.7, CR, cageMat))
+add(tube(-0.5, 0.72, 0.35, -0.55, 0.82, -0.7, CR, cageMat))      // roof rails
+add(tube( 0.5, 0.72, 0.35,  0.55, 0.82, -0.7, CR, cageMat))
+add(tube(-0.55, 0.82, -0.7, -0.62, -0.05, -1.5, CR, cageMat))    // rear struts
+add(tube( 0.55, 0.82, -0.7,  0.62, -0.05, -1.5, CR, cageMat))
+
+// roof light bar
+const barHousing = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.15, 0.16), cageMat); barHousing.position.set(0, 0.86, 0.28)
+const barLens = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.11, 0.06), lensMat); barLens.position.set(0, 0.86, 0.37)
+add(barHousing, barLens)
+add(tube(-0.4, 0.72, 0.33, -0.4, 0.86, 0.3, 0.04, cageMat), tube(0.4, 0.72, 0.33, 0.4, 0.86, 0.3, 0.04, cageMat))
+
+scene.add(car)
+
+// ── big off-road tyres with red rims ──
+const WHEEL_R = 0.5, WHEEL_W = 0.55
+const rubberMat = new THREE.MeshStandardMaterial({ color: 0x141319, roughness: 0.95, metalness: 0 })
+const treadMat  = new THREE.MeshStandardMaterial({ color: 0x0c0c11, roughness: 1, metalness: 0 })
+const rimRed    = new THREE.MeshStandardMaterial({ color: 0xe11d2b, roughness: 0.35, metalness: 0.35, flatShading: true })
+const hubMat    = new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.4, metalness: 0.6 })
+function makeTyre() {
+  const t = new THREE.Group()
+  const carcass = new THREE.CylinderGeometry(WHEEL_R, WHEEL_R, WHEEL_W, 22); carcass.rotateZ(Math.PI / 2)
+  t.add(new THREE.Mesh(carcass, rubberMat))
+  const lug = new THREE.BoxGeometry(WHEEL_W * 1.05, 0.18, 0.16)
+  const N = 18
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2
+    const m = new THREE.Mesh(lug, treadMat)
+    m.position.set(0, Math.sin(a) * (WHEEL_R + 0.02), Math.cos(a) * (WHEEL_R + 0.02))
+    m.rotation.x = -a
+    t.add(m)
+  }
+  const rim = new THREE.CylinderGeometry(WHEEL_R * 0.62, WHEEL_R * 0.62, WHEEL_W * 1.02, 14); rim.rotateZ(Math.PI / 2)
+  t.add(new THREE.Mesh(rim, rimRed))
+  const hub = new THREE.CylinderGeometry(WHEEL_R * 0.3, WHEEL_R * 0.3, WHEEL_W * 1.06, 10); hub.rotateZ(Math.PI / 2)
+  t.add(new THREE.Mesh(hub, hubMat))
+  const spoke = new THREE.BoxGeometry(WHEEL_W * 1.04, WHEEL_R * 1.0, 0.09)
+  for (let i = 0; i < 4; i++) {
+    const s = new THREE.Mesh(spoke, hubMat)
+    s.rotation.x = (i / 4) * Math.PI
+    t.add(s)
+  }
+  return t
+}
+const wheelSteer = []   // outer group — front pair turns with the steering
+const wheelSpin = []    // inner group — all four roll as you drive
+{
+  const at = [[-1.12, 1.3], [1.12, 1.3], [-1.12, -1.3], [1.12, -1.3]]  // FL FR RL RR
+  for (let i = 0; i < 4; i++) {
+    const steer = new THREE.Group()
+    steer.position.set(at[i][0], WHEEL_R - 0.5, at[i][1])   // tyre bottom sits on the ground
+    const spin = makeTyre()
+    steer.add(spin)
+    car.add(steer)
+    wheelSteer.push(steer); wheelSpin.push(spin)
+    // a coil-over shock from the body down to each hub (rides with the suspension)
+    add(makeShock(at[i][0] * 0.55, 0.36, at[i][1] * 0.72, at[i][0] * 0.92, 0.0, at[i][1]))
+  }
+}
+
+// ── playground props: ramps, crate pyramid, balls ──
+// a solid WEDGE (triangular prism) that feathers to the ground at its low edge, so the
+// car rides smoothly up and ski-jumps off the top. `ry` aims it; the launch is toward
+// +local-z. A thin tilted box leaves a lip that stops the car dead — this doesn't.
+const rampMat = new THREE.MeshStandardMaterial({ color: 0x3aa0ff, roughness: 0.5, metalness: 0.1, flatShading: true, side: THREE.DoubleSide })
+function ramp(x, z, ry, W, H, L) {
+  const hw = W / 2, hl = L / 2
+  // 0,1 = low front edge (y=0); 2,3 = back bottom; 4,5 = back top
+  const cv = [
+    new CANNON.Vec3(-hw, 0, -hl), new CANNON.Vec3(hw, 0, -hl),
+    new CANNON.Vec3(-hw, 0, hl), new CANNON.Vec3(hw, 0, hl),
+    new CANNON.Vec3(-hw, H, hl), new CANNON.Vec3(hw, H, hl),
+  ]
+  // faces wound CCW-from-outside so every normal points out (keeps cannon's SAT happy)
+  const cf = [[1, 3, 2, 0], [4, 5, 1, 0], [2, 3, 5, 4], [0, 2, 4], [1, 5, 3]]
+  const b = new CANNON.Body({ mass: 0, material: groundMat, shape: new CANNON.ConvexPolyhedron({ vertices: cv, faces: cf }) })
+  b.quaternion.setFromEuler(0, ry, 0); b.position.set(x, 0, z)
+  world.addBody(b)
+  // matching visual mesh from the same 6 corners
+  const P = [[-hw, 0, -hl], [hw, 0, -hl], [-hw, 0, hl], [hw, 0, hl], [-hw, H, hl], [hw, H, hl]]
+  const tri = [1, 3, 2, 1, 2, 0, 4, 5, 1, 4, 1, 0, 2, 3, 5, 2, 5, 4, 0, 2, 4, 1, 5, 3]
+  const pos = []; for (const i of tri) pos.push(P[i][0], P[i][1], P[i][2])
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.computeVertexNormals()
+  const m = new THREE.Mesh(geo, rampMat)
+  m.position.copy(b.position); m.quaternion.copy(b.quaternion)
+  scene.add(m)
+}
+// ═══ the time-trial circuit ═══
+// a smooth closed loop laid on the flat ground. The car drives on the flat floor; the
+// tarmac, cones, jump, boost pad and washboard are what turn it into a track. The front
+// straight runs through the origin (the car's start) heading +z.
+// a deliberately-drawn loop: a long front straight through the origin, sweeping turn 1,
+// a flowing esse down the west side, and a wide return — a single clean closed curve.
+const trackPts = [
+  [0, 0], [0, 52], [-28, 74], [-60, 70], [-82, 40], [-68, 10],
+  [-88, -22], [-66, -54], [-26, -64], [0, -50],
+].map(([x, z]) => new THREE.Vector3(x, 0, z))
+const curve = new THREE.CatmullRomCurve3(trackPts, true, 'catmullrom', 0.5)
+const N = 220
+const CL = curve.getSpacedPoints(N)                 // evenly-spaced centreline (CL[0] == origin)
+const TAN = [], NRM = []
+for (let i = 0; i <= N; i++) {
+  const t = curve.getTangentAt((i % N) / N); t.y = 0; t.normalize()
+  TAN.push(t); NRM.push(new THREE.Vector3(t.z, 0, -t.x))   // road-cross direction
+}
+const ROAD_W = 11
+
+// a flat ribbon that follows the loop, `off` from the centre, `w` wide
+function ribbon(off, w, color, y, emissive) {
+  const pos = [], idx = []
+  for (let i = 0; i <= N; i++) {
+    const p = CL[i], n = NRM[i]
+    pos.push(p.x + n.x * (off - w / 2), y, p.z + n.z * (off - w / 2))
+    pos.push(p.x + n.x * (off + w / 2), y, p.z + n.z * (off + w / 2))
+  }
+  for (let i = 0; i < N; i++) { const a = i * 2; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3) }
+  const g = new THREE.BufferGeometry()
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals()
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.92, metalness: 0 })
+  if (emissive) { mat.emissive = new THREE.Color(emissive); mat.emissiveIntensity = 0.5 }
+  const m = new THREE.Mesh(g, mat); m.receiveShadow = true; scene.add(m); return m
+}
+ribbon(0, ROAD_W, 0x34353d, 0.02)                          // tarmac
+ribbon(ROAD_W / 2 - 0.35, 0.35, 0xe9e9ee, 0.035)           // white edge lines
+ribbon(-(ROAD_W / 2 - 0.35), 0.35, 0xe9e9ee, 0.035)
+
+// start / finish line — a checkered bar across the road at the origin
+{
+  const n = NRM[0], squares = 8, sw = ROAD_W / squares
+  for (let j = 0; j < squares; j++) {
+    const off = -ROAD_W / 2 + sw * (j + 0.5)
+    const m = new THREE.Mesh(new THREE.BoxGeometry(sw, 0.06, 1.6),
+      new THREE.MeshStandardMaterial({ color: j % 2 ? 0x111111 : 0xffffff, roughness: 0.6 }))
+    m.position.set(n.x * off, 0.05, n.z * off)
+    scene.add(m)
+  }
+}
+
+// cones lining both edges — knock them if you cut the corner
+const coneMat = new THREE.MeshStandardMaterial({ color: 0xff7a1a, roughness: 0.55, flatShading: true })
+const coneBand = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 })
+const coneGeo = new THREE.ConeGeometry(0.34, 0.9, 8)
+function cone(x, z) {
+  const mesh = new THREE.Mesh(coneGeo, coneMat)   // single mesh, keeps the count down
+  const body = new CANNON.Body({ mass: 0.5, shape: new CANNON.Box(new CANNON.Vec3(0.3, 0.45, 0.3)), linearDamping: 0.35, angularDamping: 0.45 })
+  body.position.set(x, 0.45, z)
+  link(mesh, body)
+}
+for (let i = 5; i < N; i += 18) {
+  cone(CL[i].x + NRM[i].x * (ROAD_W / 2 + 0.7), CL[i].z + NRM[i].z * (ROAD_W / 2 + 0.7))
+  cone(CL[i].x - NRM[i].x * (ROAD_W / 2 + 0.7), CL[i].z - NRM[i].z * (ROAD_W / 2 + 0.7))
+}
+
+// a jump on the front straight — long enough for the whole car to ride up (no clipping)
+ramp(0, 28, 0, ROAD_W - 1, 3.0, 9)
+
+// washboard rough patch — real low ridges the suspension has to soak up
+{
+  const start = Math.floor(N * 0.34)
+  for (let j = 0; j < 8; j++) {
+    const i = start + j * 3, p = CL[i], t = TAN[i]
+    const rw = ROAD_W - 1, rh = 0.13, rl = 0.5, yaw = Math.atan2(t.x, t.z)
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(rw, rh, rl), new THREE.MeshStandardMaterial({ color: 0x5a5c65, roughness: 0.95 }))
+    const body = new CANNON.Body({ mass: 0, material: groundMat, shape: new CANNON.Box(new CANNON.Vec3(rw / 2, rh / 2, rl / 2)) })
+    body.quaternion.setFromEuler(0, yaw, 0); body.position.set(p.x, rh / 2, p.z)
+    mesh.position.copy(body.position); mesh.quaternion.copy(body.quaternion)
+    scene.add(mesh); world.addBody(body)
+  }
+}
+
+// a boost pad on a back straight
+const boostIdx = Math.floor(N * 0.72)
+const boostPos = CL[boostIdx].clone()
+{
+  const t = TAN[boostIdx]
+  const pad = new THREE.Mesh(new THREE.BoxGeometry(ROAD_W - 2, 0.05, 5),
+    new THREE.MeshStandardMaterial({ color: 0x27c6ff, emissive: 0x1aa0e0, emissiveIntensity: 0.55, roughness: 0.4 }))
+  pad.rotation.y = Math.atan2(t.x, t.z); pad.position.set(boostPos.x, 0.045, boostPos.z)
+  scene.add(pad)
+}
+
+// ── random showcase obstacles ──
+// a fresh mix of jumps, smash-through crate walls and a barrel slalom every session,
+// dropped onto free stretches of track so there's always something to test the physics on.
+const reserved = new Set()
+const mark = (i, r = 5) => { for (let d = -r; d <= r; d++) reserved.add(((i + d) % N + N) % N) }
+const isFree = (i, r = 5) => { for (let d = -r; d <= r; d++) if (reserved.has(((i + d) % N + N) % N)) return false; return true }
+mark(0, 12)                         // keep the start straight + main ramp clear
+mark(Math.floor(N * 0.34), 14)      // washboard patch
+mark(boostIdx, 6)                   // boost pad
+// is the track straight over a whole ramp-length around index i? (so a jump lines up
+// with the approach — a ramp on a curve gets hit side-on and the car clips it)
+function straightAt(i, tol = 0.12) {
+  const a = TAN[((i - 6) % N + N) % N], b = TAN[(i + 6) % N], c = TAN[i]
+  return (a.x * c.x + a.z * c.z) > Math.cos(tol) && (b.x * c.x + b.z * c.z) > Math.cos(tol)
+}
+function randomSpot(gap = 7, needStraight = false) {
+  for (let t = 0; t < 60; t++) {
+    const i = 10 + Math.floor(Math.random() * (N - 20))
+    if (!isFree(i, gap)) continue
+    if (needStraight && !straightAt(i)) continue
+    mark(i, gap); return i
+  }
+  return -1
+}
+function dynBox(x, y, z, s, color, mass, yaw) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), new THREE.MeshStandardMaterial({ color, roughness: 0.7, flatShading: true }))
+  const body = new CANNON.Body({ mass, shape: new CANNON.Box(new CANNON.Vec3(s / 2, s / 2, s / 2)), linearDamping: 0.08, angularDamping: 0.2 })
+  if (yaw) body.quaternion.setFromEuler(0, yaw, 0)
+  body.position.set(x, y, z); link(mesh, body)
+}
+// extra jumps — long, so the whole car rides up, and only on genuinely straight sections
+for (let k = 0; k < 3; k++) {
+  const i = randomSpot(9, true); if (i < 0) continue
+  ramp(CL[i].x, CL[i].z, Math.atan2(TAN[i].x, TAN[i].z), ROAD_W - 1, 2.6 + Math.random() * 0.9, 9)
+}
+// smash-through crate walls (light — you plough straight through and scatter them)
+const crateCols = [0xffb43a, 0xff6b6e, 0x8fd66f, 0x6fb6ff, 0xffe14d]
+for (let k = 0; k < 2; k++) {
+  const i = randomSpot(6, true); if (i < 0) continue
+  const n = NRM[i], yaw = Math.atan2(TAN[i].x, TAN[i].z)
+  for (let row = 0; row < 2; row++) for (let c = -1; c <= 1; c++) {
+    dynBox(CL[i].x + n.x * c * 1.5, 0.75 + row * 1.5, CL[i].z + n.z * c * 1.5, 1.4, crateCols[(c + row + 5) % 5], 2.5, yaw)
+  }
+}
+// a barrel slalom to weave through
+{
+  const i = randomSpot(10, true)
+  if (i >= 0) for (let k = 0; k < 6; k++) {
+    const j = (i + k * 2) % N, n = NRM[j], side = k % 2 ? 1 : -1
+    const mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.4, 12), new THREE.MeshStandardMaterial({ color: 0xe23b45, roughness: 0.5, flatShading: true }))
+    const body = new CANNON.Body({ mass: 1.5, shape: new CANNON.Box(new CANNON.Vec3(0.5, 0.7, 0.5)), linearDamping: 0.2, angularDamping: 0.3 })
+    body.position.set(CL[j].x + n.x * side * 2.6, 0.7, CL[j].z + n.z * side * 2.6); link(mesh, body)
+  }
+}
+
+// ── time-trial state ──
+function progressAt(px, pz) {
+  let best = 1e9, bi = 0
+  for (let i = 0; i < N; i++) {
+    const dx = CL[i].x - px, dz = CL[i].z - pz, d = dx * dx + dz * dz
+    if (d < best) { best = d; bi = i }
+  }
+  return bi / N
+}
+let lapStart = 0, lastLap = null, bestLap = null, lapS = 0, passedHalf = false, boostUntil = 0
+
+// ── input ──
+const keys = { up: 0, down: 0, left: 0, right: 0, brake: 0 }
+let started = false
+function begin() { if (!started) { started = true; centerEl.classList.add('hidden'); lapStart = performance.now() } }
+function resetCar() {
+  carBody.position.set(0, 1.4, 0)          // back to the start / finish line
+  carBody.quaternion.set(0, 0, 0, 1)
+  carBody.velocity.set(0, 0, 0)
+  carBody.angularVelocity.set(0, 0, 0)
+  carBody.wakeUp()
+  lapStart = performance.now(); passedHalf = false; lapS = 0   // restart the current lap (best time stays)
+}
+addEventListener('keydown', (e) => {
+  const k = e.key.toLowerCase()
+  if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault()
+  if (k === 'arrowup' || k === 'w') keys.up = 1
+  if (k === 'arrowdown' || k === 's') keys.down = 1
+  if (k === 'arrowleft' || k === 'a') keys.left = 1
+  if (k === 'arrowright' || k === 'd') keys.right = 1
+  if (k === ' ') keys.brake = 1
+  if (k === 'r') resetCar()
+  begin()
+})
+addEventListener('keyup', (e) => {
+  const k = e.key.toLowerCase()
+  if (k === 'arrowup' || k === 'w') keys.up = 0
+  if (k === 'arrowdown' || k === 's') keys.down = 0
+  if (k === 'arrowleft' || k === 'a') keys.left = 0
+  if (k === 'arrowright' || k === 'd') keys.right = 0
+  if (k === ' ') keys.brake = 0
+})
+wrap.addEventListener('pointerdown', () => begin())
+
+// grab keyboard focus so the arrow keys work the moment the window opens (no tap needed)
+function grabFocus() { try { window.focus() } catch (e) {} }
+grabFocus()
+addEventListener('load', grabFocus)
+addEventListener('pointerenter', grabFocus)
+document.addEventListener('visibilitychange', () => { if (!document.hidden) grabFocus() })
+
+// ground probe — a ray straight down that ignores the car (group 2)
+const _from = new CANNON.Vec3(), _to = new CANNON.Vec3(), _hit = new CANNON.RaycastResult()
+const _rayOpt = { collisionFilterMask: 1, skipBackfaces: true }
+function grounded() {
+  _from.copy(carBody.position)
+  _to.set(carBody.position.x, carBody.position.y - 2.2, carBody.position.z)
+  _hit.reset()
+  world.raycastClosest(_from, _to, _rayOpt, _hit)
+  return _hit.hasHit && (carBody.position.y - _hit.hitPointWorld.y) < 1.3
+}
+let visualSteer = 0, fwdSpeed = 0
+function drive() {
+  const q = carBody.quaternion
+  const fwd = q.vmult(new CANNON.Vec3(0, 0, 1))
+  const right = q.vmult(new CANNON.Vec3(1, 0, 0))
+  const up = q.vmult(new CANNON.Vec3(0, 1, 0))
+  const fFlat = new CANNON.Vec3(fwd.x, 0, fwd.z); if (fFlat.length() > 0.001) fFlat.normalize()
+  const rFlat = new CANNON.Vec3(right.x, 0, right.z); if (rFlat.length() > 0.001) rFlat.normalize()
+  const v = carBody.velocity
+  const speed = Math.hypot(v.x, v.z)
+  const dir = v.x * fFlat.x + v.z * fFlat.z   // + forward, − reversing
+  fwdSpeed = dir                              // drives the wheel roll in the loop
+  const steerIn = (keys.left ? 1 : 0) - (keys.right ? 1 : 0)
+  visualSteer += ((steerIn * 0.5) - visualSteer) * 0.25   // smooth the visible wheel turn
+
+  const onGround = grounded()
+  const upright = up.y > 0.5
+
+  if (onGround && upright) {
+    carBody.wakeUp()
+    // engine
+    const f = keys.up ? ENGINE : keys.down ? -REVERSE : 0
+    if (f) carBody.applyForce(new CANNON.Vec3(fFlat.x * f, 0, fFlat.z * f))
+    // rolling drag / handbrake
+    const k = keys.brake ? 0.88 : (f ? 1 : 0.985)
+    v.x *= k; v.z *= k
+    // fake tyres: shed sideways velocity
+    const vLat = v.x * rFlat.x + v.z * rFlat.z
+    v.x -= rFlat.x * vLat * GRIP
+    v.z -= rFlat.z * vLat * GRIP
+    // speed cap (raised for a moment after hitting the boost pad)
+    const cap = performance.now() < boostUntil ? MAXSPEED * 1.5 : MAXSPEED
+    if (speed > cap) { const s = cap / speed; v.x *= s; v.z *= s }
+    // steering: rotate yaw, scaled by how fast we're going and which way
+    const grip = Math.min(1, speed / 4) * (dir < -0.3 ? -1 : 1)
+    carBody.angularVelocity.y = steerIn * TURN * grip
+  } else if (!onGround) {
+    // airborne: pitch on ▲▼, barrel-roll on ◀▶ — show off the physics
+    const pitch = (keys.down ? 1 : 0) - (keys.up ? 1 : 0)
+    const roll = (keys.right ? 1 : 0) - (keys.left ? 1 : 0)
+    const av = carBody.angularVelocity
+    av.x += (right.x * pitch + fwd.x * roll) * AIR
+    av.y += (right.y * pitch + fwd.y * roll) * AIR
+    av.z += (right.z * pitch + fwd.z * roll) * AIR
+  }
+}
+
+// ── camera chase (ground-projected forward so flips don't spin the view) ──
+const camTmp = new THREE.Vector3(), camQuat = new THREE.Quaternion()
+function updateCamera() {
+  camQuat.set(carBody.quaternion.x, carBody.quaternion.y, carBody.quaternion.z, carBody.quaternion.w)
+  const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(camQuat); fwd.y = 0
+  if (fwd.lengthSq() < 0.01) fwd.set(0, 0, 1); fwd.normalize()
+  const p = carBody.position
+  camTmp.set(p.x - fwd.x * 13, p.y + 7, p.z - fwd.z * 13)
+  camera.position.lerp(camTmp, 0.1)
+  camera.lookAt(p.x + fwd.x * 5, p.y + 1.5, p.z + fwd.z * 5)
+}
+
+function resize() {
+  const w = wrap.clientWidth, h = wrap.clientHeight
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2))   // crisp, full resolution
+  renderer.setSize(w, h, false)
+  camera.aspect = w / h; camera.updateProjectionMatrix()
+}
+addEventListener('resize', resize); resize()
+
+// let every solid object drop a shadow (ground only receives)
+scene.traverse((o) => { if (o.isMesh && o !== groundMesh) { o.castShadow = true; o.receiveShadow = true } })
+
+// ── suspension spring state (visual: the chassis bobs, squats, dives & leans) ──
+let bobY = 0, bobVY = 0, leanP = 0, leanPV = 0, leanR = 0, leanRV = 0
+let prevVY = 0, prevFwd = 0, prevLat = 0, accF = 0, accL = 0
+function suspension() {
+  const v = carBody.velocity, q = carBody.quaternion
+  const r = q.vmult(new CANNON.Vec3(1, 0, 0)); const rlen = Math.hypot(r.x, r.z) || 1
+  const lat = (v.x * r.x + v.z * r.z) / rlen
+  const fwdAcc = (fwdSpeed - prevFwd) / DT; prevFwd = fwdSpeed
+  const latAcc = (lat - prevLat) / DT; prevLat = lat
+  accF += (fwdAcc - accF) * 0.12   // smooth the grip/step noise before it drives the body
+  accL += (latAcc - accL) * 0.12
+  // off-road chatter: a constant little jitter that grows with speed, so it never sits
+  // dead-flat — reads like a real off-roader skittering over the surface
+  const spd = Math.min(Math.hypot(v.x, v.z), 20)
+  bobVY += (Math.random() - 0.5) * spd * 0.011
+  leanPV += (Math.random() - 0.5) * spd * 0.0025
+  leanRV += (Math.random() - 0.5) * spd * 0.0025
+  // vertical bob: catching the ground (v.y jumps up) compresses the springs, then they rebound
+  const dvy = v.y - prevVY; prevVY = v.y
+  if (dvy > 3) bobVY -= Math.min(dvy, 22) * 0.14
+  bobVY += (-70 * bobY - 9 * bobVY) * DT
+  bobY = Math.max(-0.26, Math.min(0.12, bobY + bobVY * DT))
+  // squat under throttle / dive under braking, lean into turns — damped springs
+  const pT = Math.max(-0.14, Math.min(0.14, -accF * 0.006))
+  const rT = Math.max(-0.14, Math.min(0.14, accL * 0.006))
+  leanPV += ((pT - leanP) * 130 - leanPV * 20) * DT; leanP += leanPV * DT
+  leanRV += ((rT - leanR) * 130 - leanRV * 20) * DT; leanR += leanRV * DT
+  chassis.position.y = bobY
+  chassis.rotation.x = leanP
+  chassis.rotation.z = leanR
+}
+
+// ── loop ──
+const DT = 1 / 60; let last = performance.now(); let rollAngle = 0
+function loop(now) {
+  requestAnimationFrame(loop)
+  const dt = Math.min(0.05, (now - last) / 1000); last = now
+  drive()
+  world.step(DT, dt, 3)
+  if (carBody.position.y < -20) resetCar()
+  // sync car body → group (wheels are children, they follow for free)
+  car.position.copy(carBody.position)
+  car.quaternion.copy(carBody.quaternion)
+  wheelSteer[0].rotation.y = visualSteer    // front pair turns with the steering
+  wheelSteer[1].rotation.y = visualSteer
+  rollAngle -= (fwdSpeed / WHEEL_R) * DT    // and every tyre rolls with speed
+  for (let i = 0; i < 4; i++) wheelSpin[i].rotation.x = rollAngle
+  suspension()                              // bob / squat / dive / lean on the springs
+  sync()
+  updateCamera()
+  // keep the sun (and its shadow frustum) centred on the car so shadows stay crisp
+  sun.position.set(carBody.position.x + 40, carBody.position.y + 72, carBody.position.z + 26)
+  sun.target.position.copy(carBody.position); sun.target.updateMatrixWorld()
+  const kmh = Math.round(Math.hypot(carBody.velocity.x, carBody.velocity.z) * 3.6)
+  hudSpeed.innerHTML = kmh + '<small> KM/H</small>'
+
+  // ── time trial: lap detection, boost pad, HUD ──
+  if (started) {
+    const s = progressAt(carBody.position.x, carBody.position.z)
+    if (s > 0.5) passedHalf = true
+    // crossed the start/finish going forward (progress wrapped 1 → 0) after a real lap
+    if (lapS > 0.7 && s < 0.3 && passedHalf) {
+      const lap = (now - lapStart) / 1000
+      lastLap = lap
+      if (bestLap === null || lap < bestLap) bestLap = lap
+      lapStart = now; passedHalf = false
+    }
+    lapS = s
+    // boost pad — a short burst of extra top speed
+    const bdx = carBody.position.x - boostPos.x, bdz = carBody.position.z - boostPos.z
+    if (bdx * bdx + bdz * bdz < 10) {
+      boostUntil = now + 1100
+      const fq = carBody.quaternion.vmult(new CANNON.Vec3(0, 0, 1))
+      const fl = Math.hypot(fq.x, fq.z) || 1
+      carBody.velocity.x += (fq.x / fl) * 0.7
+      carBody.velocity.z += (fq.z / fl) * 0.7
+    }
+    hudLapCur.textContent = ((now - lapStart) / 1000).toFixed(2)
+    hudLapBest.textContent = bestLap === null ? '--' : bestLap.toFixed(2)
+    hudLapLast.textContent = lastLap === null ? '--' : lastLap.toFixed(2)
+  }
+  renderer.render(scene, camera)
+}
+requestAnimationFrame(loop)
+
+} catch (err) {
+  const e = document.getElementById('err'); e.classList.remove('hidden')
+  e.textContent = 'Playground failed to load: ' + (err && err.message ? err.message : err)
+}
+</script>
+</body>
+</html>

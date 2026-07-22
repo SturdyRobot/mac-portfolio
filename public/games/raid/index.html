@@ -1,0 +1,2274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raid Clicker</title>
+<style>
+  :root{
+    --bg:#0d0f0c; --panel:#15180f; --panel2:#1c2014; --line:#2c3320;
+    --text:#c7c9b6; --dim:#7d8268; --accent:#a3b545; --warn:#d98a2b;
+    --danger:#c0392b; --gold:#d4a017; --good:#6fa84f;
+    --tier-junk:#8a8a78; --tier-common:#cfd2bd; --tier-rare:#5b9bd5;
+    --tier-epic:#a05bd5; --tier-legendary:#d4a017;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:"Courier New",ui-monospace,monospace;
+    font-size:14px; line-height:1.4; overflow-x:hidden;
+    background-image:radial-gradient(circle at 50% 0%, #1a1d12 0%, #0d0f0c 60%);
+  }
+  #app{max-width:960px; margin:0 auto; padding:14px; min-height:100%}
+  h1,h2,h3{font-weight:bold; letter-spacing:1px; text-transform:uppercase}
+  .topbar{
+    display:flex; justify-content:space-between; align-items:center;
+    border:1px solid var(--line); background:var(--panel);
+    padding:10px 14px; margin-bottom:12px;
+  }
+  .brand{color:var(--accent); font-size:18px}
+  .brand small{color:var(--dim); font-size:11px; display:block; letter-spacing:3px}
+  .wallet{font-size:18px; color:var(--gold); text-align:right}
+  .wallet small{color:var(--dim); font-size:10px; display:block; text-align:right}
+  .grid{display:grid; gap:12px}
+  .cols-2{grid-template-columns:1fr 1fr}
+  .panel{border:1px solid var(--line); background:var(--panel); padding:12px}
+  .panel h2{color:var(--accent); font-size:13px; border-bottom:1px solid var(--line);
+    padding-bottom:6px; margin-bottom:10px; display:flex; justify-content:space-between}
+  .muted{color:var(--dim)}
+  button{
+    font-family:inherit; font-size:13px; cursor:pointer; color:var(--text);
+    background:var(--panel2); border:1px solid var(--line); padding:8px 12px;
+    text-transform:uppercase; letter-spacing:1px; transition:.12s;
+  }
+  button:hover:not(:disabled){border-color:var(--accent); color:var(--accent)}
+  button:disabled{opacity:.35; cursor:not-allowed}
+  button.primary{background:var(--accent); color:#0d0f0c; border-color:var(--accent); font-weight:bold}
+  button.primary:hover{filter:brightness(1.1)}
+  button.danger{border-color:var(--danger); color:var(--danger)}
+  button.danger:hover{background:var(--danger); color:#fff}
+  button.sm{padding:4px 8px; font-size:11px}
+  button.wide{width:100%}
+  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .spread{display:flex; justify-content:space-between; align-items:center}
+  .loc{
+    border:1px solid var(--line); background:var(--panel2); padding:10px; margin-bottom:8px; cursor:pointer;
+  }
+  .loc:hover{border-color:var(--accent)}
+  .loc .name{color:var(--text); font-weight:bold; font-size:15px}
+  .bar{height:6px; background:#000; border:1px solid var(--line); position:relative; overflow:hidden}
+  .bar>span{position:absolute; left:0; top:0; bottom:0; transition:width .15s}
+  .pip{display:inline-block; width:9px; height:9px; border:1px solid var(--line); margin-right:2px}
+  .pip.on{background:var(--warn); border-color:var(--warn)}
+  .pip.on.hot{background:var(--danger); border-color:var(--danger)}
+  .item{display:flex; justify-content:space-between; padding:3px 6px; border-bottom:1px solid #20241799; gap:8px}
+  .item .v{color:var(--gold); white-space:nowrap}
+  .tag{font-size:10px; padding:1px 5px; border:1px solid; text-transform:uppercase; white-space:nowrap}
+  .feed{height:150px; overflow-y:auto; background:#0a0c08; border:1px solid var(--line); padding:6px; font-size:12px}
+  .feed div{padding:1px 0}
+  .stat{text-align:center; flex:1}
+  .stat .big{font-size:22px; display:block}
+  .stat .lab{font-size:10px; color:var(--dim); letter-spacing:1px}
+  .overlay{
+    position:fixed; inset:0; background:rgba(5,6,4,.92); z-index:50;
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+  }
+  .arena{
+    position:relative; width:580px; max-width:94vw; height:400px; max-height:60vh;
+    border:2px solid var(--danger); background:
+      repeating-linear-gradient(0deg,#11140c,#11140c 24px,#0d0f0c 24px,#0d0f0c 48px);
+    overflow:hidden; cursor:crosshair;
+  }
+  .target{
+    position:absolute; border-radius:50%; border:2px solid; transform:translate(-50%,-50%);
+    display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:bold;
+    cursor:crosshair; user-select:none; text-align:center; line-height:1.05;
+  }
+  .target.head{background:#c0392b55; border-color:#e74c3c; color:#ffb3a7}
+  .target.body{background:#27548a55; border-color:#5b9bd5; color:#bcdcff}
+  .target.limb{background:#7d826855; border-color:#a3b545; color:#dfe6b8}
+  .loot-drop{
+    position:absolute; transform:translate(-50%,-50%); padding:6px 8px; border:2px solid var(--gold);
+    background:#1c1505; color:var(--gold); cursor:pointer; font-size:11px; white-space:nowrap;
+    animation:pulse 1s infinite;
+  }
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 #d4a01788}50%{box-shadow:0 0 0 6px #d4a01700}}
+  .crosshair-info{position:absolute; top:6px; left:8px; right:8px; display:flex; justify-content:space-between; font-size:12px; pointer-events:none}
+  .flash{position:absolute; inset:0; background:var(--danger); opacity:0; pointer-events:none}
+  .raider{border:1px solid var(--line); background:var(--panel2); padding:8px; margin-bottom:8px}
+  .raider .nm{font-weight:bold; color:var(--text)}
+  select{font-family:inherit; background:var(--panel2); color:var(--text); border:1px solid var(--line); padding:4px}
+  .toast{position:fixed; top:10px; left:50%; transform:translateX(-50%); z-index:99;
+    background:var(--panel); border:1px solid var(--accent); padding:8px 16px; color:var(--accent)}
+  .hidden{display:none !important}
+  .deathscreen{text-align:center}
+  .deathscreen h1{color:var(--danger); font-size:42px; margin-bottom:10px}
+  .scav-btn{width:100%; height:90px; font-size:20px; margin-top:8px}
+  .blink{animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:.3}}
+  @keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(calc(var(--shake,5px)*-1),var(--shake,5px))}40%{transform:translate(var(--shake,5px),calc(var(--shake,5px)*-1))}60%{transform:translate(calc(var(--shake,5px)*-1),0)}80%{transform:translate(var(--shake,5px),var(--shake,5px))}}
+  @keyframes critpop{0%{transform:translate(-50%,-50%) scale(.5)}50%{transform:translate(-50%,-90%) scale(1.4)}100%{transform:translate(-50%,-130%) scale(1);opacity:0}}
+  ::-webkit-scrollbar{width:8px}
+  ::-webkit-scrollbar-thumb{background:var(--line)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">RAID CLICKER<small>extract or die</small></div>
+    <div class="row">
+      <button id="mailBtn" onclick="openMail()" style="position:relative">📬<span id="mailbadge"></span></button>
+      <div class="wallet"><span id="money">0</span> ₽<small><span id="keycount">0</span> 🔑 keycards</small></div>
+    </div>
+  </div>
+  <div id="screen-hub"></div>
+  <div id="screen-raid" class="hidden"></div>
+</div>
+<div id="overlay-root"></div>
+<div id="toast-root"></div>
+
+<script>
+/* ============================================================
+   RAID CLICKER  — gear / ammo / penetration build
+   ============================================================ */
+const $ = (id)=>document.getElementById(id);
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const ri=(a,b)=>Math.floor(rnd(a,b+1));
+const pick=(arr)=>arr[Math.floor(Math.random()*arr.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const fmt=(n)=>Math.round(n).toLocaleString();
+function toast(msg,color){
+  const t=document.createElement('div'); t.className='toast'; t.textContent=msg;
+  if(color){ t.style.borderColor=color; t.style.color=color; }
+  $('toast-root').appendChild(t);
+  setTimeout(()=>{ t.style.transition='.4s'; t.style.opacity='0'; },1400);
+  setTimeout(()=>t.remove(),1900);
+}
+// inbox: persistent messages from raiders, traders, and the hideout
+function addMail(from, subject, body, icon){
+  G.mail.unshift({id:++mailUid, from, subject, body, icon:icon||'📨', t:Date.now(), read:false, open:false});
+  if(G.mail.length>60) G.mail.length=60;
+  if(typeof updateMailBadge==='function') updateMailBadge();
+}
+function unreadMail(){ return G.mail.filter(m=>!m.read).length; }
+function summarizeHaul(items, mats){
+  const by={}; let notable=[];
+  for(const it of items){
+    const k = it.kind==='loot'?'valuables':it.kind==='ammo'?'ammo stacks':it.kind==='weapon'?'weapons':it.kind==='armor'?'armor':it.kind==='helmet'?'helmets':it.kind==='backpack'?'backpacks':it.kind==='rig'?'rigs':it.kind==='med'?'meds':it.kind==='material'?'materials':it.kind==='key'?'keycards':'items';
+    by[k]=(by[k]||0)+(it.count||1);
+    if(it.tier==='legendary'||it.kind==='key') notable.push(it.name);
+  }
+  if(mats>0) by['materials']=(by['materials']||0)+mats;
+  const parts=Object.entries(by).map(([k,n])=>`${n} ${k}`);
+  let s = parts.length? parts.join(' · ') : 'nothing of note';
+  if(notable.length) s += `<br><span style="color:var(--gold)">★ ${[...new Set(notable)].join(', ')}</span>`;
+  return s;
+}
+function openMail(){
+  const o=document.createElement('div'); o.className='overlay'; o.id='mail-ov';
+  const list = G.mail.length? G.mail.map(m=>`
+    <div class="loc" style="cursor:pointer;${m.read?'':'border-color:var(--accent)'}" onclick="toggleMail(${m.id})">
+      <div class="spread"><div><b style="${m.read?'':'color:var(--accent)'}">${m.icon} ${m.from}</b>
+        <span class="muted" style="font-size:11px"> — ${m.subject}</span></div>
+        ${m.read?'':'<span class="tag" style="color:var(--accent);border-color:var(--accent)">NEW</span>'}</div>
+      ${m.open?`<div class="muted" style="font-size:12px;margin-top:5px">${m.body}</div>`:''}
+    </div>`).join('') : '<div class="muted">Inbox empty.</div>';
+  o.innerHTML=`<div class="panel" style="width:560px;max-width:94vw;max-height:86vh;overflow:auto">
+    <div class="spread"><h2 style="border:none;margin:0">📬 Inbox <span class="muted">${unreadMail()} unread</span></h2>
+      <div class="row"><button class="sm" onclick="markAllRead()">Mark all read</button><button class="sm danger" onclick="clearMail()">Clear</button></div></div>
+    <div style="margin-top:10px">${list}</div>
+    <button class="wide primary" style="margin-top:12px" onclick="closeOv()">Close</button>
+  </div>`;
+  $('overlay-root').innerHTML=''; $('overlay-root').appendChild(o);
+}
+function toggleMail(id){ const m=G.mail.find(x=>x.id===id); if(m){ m.open=!m.open; m.read=true; } updateMailBadge(); openMail(); }
+function markAllRead(){ G.mail.forEach(m=>m.read=true); updateMailBadge(); openMail(); }
+function clearMail(){ G.mail=[]; updateMailBadge(); closeOv(); }
+
+/* ============================================================
+   PRESTIGE — season wipe → permanent Kappa Token upgrades
+   ============================================================ */
+const PRESTIGE_UP = [
+  {id:'loot',   name:'Loot Find',       icon:'💎', per:0.05, unit:'% loot value',       max:20},
+  {id:'income', name:'Fat Stacks',      icon:'💰', per:0.06, unit:'% money from sales', max:20},
+  {id:'dmg',    name:'Steady Hands',    icon:'🎯', per:0.05, unit:'% weapon damage',    max:20},
+  {id:'carry',  name:'Pack Mule',       icon:'🎒', per:2,    unit:' carry points',      max:20},
+  {id:'crew',   name:'Crew Efficiency', icon:'🛏', per:0.06, unit:'% faster raiders',   max:8},
+  {id:'market', name:'Black Market',    icon:'🤝', per:0.04, unit:'% cheaper prices',   max:10},
+];
+function presLvl(id){ return (G.prestige.up||{})[id]||0; }
+function lootMult(){ return 1 + 0.05*presLvl('loot'); }
+function incomeMult(){ return 1 + 0.06*presLvl('income'); }
+function dmgMult(){ return 1 + 0.05*presLvl('dmg'); }
+function carryBonus(){ return 2*presLvl('carry'); }
+function raiderSpeedMult(){ return Math.max(0.4, 1 - 0.06*presLvl('crew')); }
+function priceMult(){ return Math.max(0.5, 1 - 0.04*presLvl('market')); }
+// net worth + accomplishments this season → drives token payout on wipe
+function seasonScore(){
+  let s=G.money + G.keys*BTC_VALUE;
+  s += G.stash.reduce((a,i)=>a+(i.value||0),0);
+  for(const k of ['weapons','armors','helmets','backpacks','rigs']) s += (G.arsenal[k]||[]).reduce((a,i)=>a+(i.value||0),0);
+  for(const [n,c] of Object.entries(G.ammoStock)) s += (AMMO_BY_NAME[n]?.val||0)*c;
+  for(const [n,c] of Object.entries(G.medStock)) s += (MED_BY_NAME[n]?.val||0)*c;
+  for(const [n,c] of Object.entries(G.materials)) s += (MATERIAL_PRICE[n]||3000)*0.5*c;
+  for(const m of MODULES){ const lvl=moduleLevel(m.id); for(let i=0;i<lvl;i++) s+=m.tiers[i].money; }
+  for(const id in G.traders) s += (G.traders[id].exp||0)*800;
+  s += G.stats.kills*4000 + G.stats.extracts*12000;
+  return Math.round(s);
+}
+function prestigeGain(){ return Math.floor(Math.sqrt(seasonScore()/500000)); }   // 500k→1, 2M→2, 4.5M→3, 50M→10
+function presCost(id){ return presLvl(id)+1; }   // tokens for the next level
+function buyPrestige(id){
+  const def=PRESTIGE_UP.find(u=>u.id===id), lvl=presLvl(id);
+  if(lvl>=def.max) return toast('Maxed out','var(--warn)');
+  const cost=presCost(id);
+  if(G.prestige.tokens<cost) return toast('Not enough Kappa Tokens','var(--danger)');
+  G.prestige.tokens-=cost; G.prestige.up[id]=lvl+1; toast(`${def.name} → L${lvl+1}`,'var(--gold)'); save(); openPrestige();
+}
+function doWipe(){
+  const gain=prestigeGain();
+  if(gain<1) return toast('Not enough progress to wipe — grow your net worth first','var(--danger)');
+  if(!confirm(`WIPE THE SEASON?\n\nYou lose all money, gear, hideout, raiders and traders.\nYou KEEP your prestige and gain ${gain} Kappa Token${gain>1?'s':''}.\n\nProceed?`)) return;
+  G.prestige.tokens+=gain; G.prestige.wipes++;
+  resetSeason();
+  toast(`Season wiped — +${gain} Kappa Tokens`,'var(--gold)');
+  closeOv(); render();
+}
+function resetSeason(){
+  G.money=9000; G.keys=0; G.stash=[];
+  G.arsenal={weapons:[],armors:[],helmets:[],backpacks:[],rigs:[]};
+  G.ammoStock={'9x18 PM gzh':64}; G.medStock={'Bandage':3,'Salewa':1}; G.gunLevels={};
+  G.gear={weapons:[{...WPN_BY_NAME['Makarov PM']},null], ammos:['9x18 PM gzh',''], active:0,
+    armor:{...ARMORS[0]}, helmet:{...HELMETS[0]}, backpack:{...BACKPACKS[0]}, rig:{...RIGS[0]}};
+  G.raiders=[]; G.materials={};
+  G.base={modules:{barracks:1,generator:0,workbench:0,medstation:0,intel:0,bitcoin:0}, builds:[], crafts:[], btc:0, btcLast:Date.now()};
+  G.auto={scav:0,reload:0,loot:0,extract:0}; G.autoExtractRisk=40; G.lastScav=0; G._scav=null;
+  G.stats={extracts:0,deaths:0,kills:0};
+  G.traders={}; initTraders();
+  G.progress=defaultProgress();
+  G.raid=null;
+  addMail('Terra Group', `Season ${G.prestige.wipes} begins`, `A fresh wipe. Your <b style="color:var(--gold)">${G.prestige.tokens} Kappa Tokens</b> and permanent upgrades carry over. Build it back bigger, PMC.`, '🔄');
+}
+function openPrestige(){
+  const o=document.createElement('div'); o.className='overlay'; o.id='prestige-ov';
+  const score=seasonScore(), gain=prestigeGain();
+  const rows=PRESTIGE_UP.map(u=>{
+    const lvl=presLvl(u.id), cost=presCost(u.id), maxed=lvl>=u.max;
+    const amount = u.per<1? `+${Math.round(u.per*100*lvl)}${u.unit}` : `+${u.per*lvl}${u.unit}`;
+    return `<div class="loc" style="cursor:default"><div class="spread">
+      <div><b>${u.icon} ${u.name}</b> <span class="muted">L${lvl}/${u.max}</span>
+        <div class="muted" style="font-size:11px">currently ${amount||'none'} · ${u.per<1?Math.round(u.per*100):u.per}${u.unit} per level</div></div>
+      <div>${maxed?'<span class="tag" style="color:var(--good);border-color:var(--good)">MAX</span>'
+        :`<button class="sm" onclick="buyPrestige('${u.id}')" ${G.prestige.tokens>=cost?'':'disabled'}>${cost} ⬡</button>`}</div>
+    </div></div>`;
+  }).join('');
+  o.innerHTML=`<div class="panel" style="width:560px;max-width:94vw;max-height:88vh;overflow:auto">
+    <div class="spread"><h2 style="border:none;margin:0">⬡ Prestige</h2><span style="color:var(--gold)">${G.prestige.tokens} Kappa Tokens</span></div>
+    <div class="muted" style="font-size:12px;margin:4px 0 10px">Permanent upgrades that survive every wipe. Tokens are earned by wiping a season — the bigger your empire, the more you bank.</div>
+    <div class="loc" style="border-color:var(--gold);cursor:default">
+      <div class="spread"><div><b>Season net worth</b><div class="muted" style="font-size:11px">money + gear + hideout + rep + kills/extracts</div></div>
+        <div style="text-align:right"><b style="color:var(--gold)">${fmt(score)} ₽</b></div></div>
+      <div class="spread" style="margin-top:6px"><span class="muted">Wipe now to bank</span><b style="color:${gain>=1?'var(--good)':'var(--dim)'}">${gain} token${gain===1?'':'s'}</b></div>
+      <button class="wide danger" style="margin-top:8px" onclick="doWipe()" ${gain>=1?'':'disabled'}>🔄 WIPE SEASON — bank ${gain} token${gain===1?'':'s'}</button>
+      <div class="muted" style="font-size:10px;margin-top:3px;text-align:center">Season ${G.prestige.wipes+1} · ${G.prestige.wipes} wipes completed</div>
+    </div>
+    <h3 style="color:var(--accent);margin:12px 0 6px">Permanent Upgrades</h3>${rows}
+    <button class="wide primary" style="margin-top:12px" onclick="closeOv()">Close</button>
+  </div>`;
+  $('overlay-root').innerHTML=''; $('overlay-root').appendChild(o);
+}
+
+/* ============================================================
+   JUICE — sound, crits, screen shake, rarity flash
+   ============================================================ */
+let _ac=null;
+function sfx(type){
+  if(G.muted) return;
+  try{
+    _ac=_ac||new (window.AudioContext||window.webkitAudioContext)();
+    const t=_ac.currentTime, o=_ac.createOscillator(), g=_ac.createGain();
+    o.connect(g); g.connect(_ac.destination);
+    const P={click:[420,0.05,'square',0.06],hit:[200,0.07,'sawtooth',0.08],crit:[880,0.12,'square',0.12],
+      kill:[140,0.18,'sawtooth',0.12],cash:[660,0.12,'sine',0.1],extract:[523,0.25,'sine',0.12],
+      legendary:[990,0.4,'triangle',0.14],reload:[300,0.08,'square',0.06],err:[120,0.12,'square',0.08]}[type]||[440,0.06,'sine',0.06];
+    o.type=P[2]; o.frequency.setValueAtTime(P[0],t);
+    if(type==='extract'||type==='legendary') o.frequency.exponentialRampToValueAtTime(P[0]*2,t+P[1]);
+    if(type==='kill') o.frequency.exponentialRampToValueAtTime(60,t+P[1]);
+    g.gain.setValueAtTime(P[3],t); g.gain.exponentialRampToValueAtTime(0.0001,t+P[1]);
+    o.start(t); o.stop(t+P[1]+0.02);
+  }catch(e){}
+}
+function shake(sel, amt){ const el=document.querySelector(sel); if(!el)return; el.style.animation='none';
+  requestAnimationFrame(()=>{ el.style.setProperty('--shake',(amt||5)+'px'); el.style.animation='shake .25s'; }); }
+function rarityFlash(color){ const f=document.createElement('div'); f.style.cssText=`position:fixed;inset:0;background:${color};opacity:.32;pointer-events:none;z-index:80;transition:opacity .5s`;
+  document.body.appendChild(f); requestAnimationFrame(()=>f.style.opacity='0'); setTimeout(()=>f.remove(),520); }
+function bigBanner(text,color){ const b=document.createElement('div');
+  b.style.cssText=`position:fixed;top:32%;left:50%;transform:translate(-50%,-50%) scale(.6);z-index:90;color:${color};font-size:30px;font-weight:bold;letter-spacing:2px;text-shadow:0 0 12px ${color};pointer-events:none;transition:.4s;opacity:0`;
+  b.textContent=text; document.body.appendChild(b);
+  requestAnimationFrame(()=>{ b.style.opacity='1'; b.style.transform='translate(-50%,-50%) scale(1)'; });
+  setTimeout(()=>{ b.style.opacity='0'; b.style.transform='translate(-50%,-60%) scale(1.1)'; },900); setTimeout(()=>b.remove(),1400); }
+// celebrate notable loot
+function juiceLoot(it){
+  if(it.kind==='key'){ sfx('legendary'); rarityFlash('#d4a017'); bigBanner('★ KEYCARD ★','var(--gold)'); }
+  else if(it.tier==='legendary'){ sfx('legendary'); rarityFlash('#d4a017'); bigBanner('LEGENDARY!','var(--gold)'); }
+  else if(it.tier==='epic'){ sfx('cash'); rarityFlash('#a05bd5'); }
+}
+function toggleMute(){ G.muted=!G.muted; if(!G.muted)sfx('click'); save(); if(document.querySelector('.overlay'))openAuto(); }
+
+/* ============================================================
+   AUTOMATION — buyable upgrades that run the raid loop for you
+   ============================================================ */
+const AUTO_UP = [
+  {id:'scav',    name:'Auto-Scavenge', icon:'🤖', desc:'A drone scavenges for you. Each level is faster.', max:8,  base:40000,  mul:1.7},
+  {id:'reload',  name:'Auto-Reload',   icon:'🔄', desc:'Reloads automatically when your mag runs dry.',     max:1,  base:60000,  mul:1},
+  {id:'loot',    name:'Auto-Loot',     icon:'🧲', desc:'Vacuums up loot drops after a kill.',               max:1,  base:90000,  mul:1},
+  {id:'extract', name:'Auto-Extract',  icon:'🚁', desc:'Bugs out automatically when risk gets too high.',   max:1,  base:120000, mul:1},
+];
+function autoLvl(id){ return (G.auto||{})[id]||0; }
+function autoCost(id){ const d=AUTO_UP.find(u=>u.id===id); return Math.round(d.base*Math.pow(d.mul,autoLvl(id))); }
+function autoScavInterval(){ return Math.max(0.6, 2.6 - 0.28*autoLvl('scav')); }   // seconds between auto-scavs
+function buyAuto(id){
+  const d=AUTO_UP.find(u=>u.id===id), lvl=autoLvl(id);
+  if(lvl>=d.max) return toast('Maxed','var(--warn)');
+  const cost=autoCost(id); if(G.money<cost) return toast('Not enough roubles','var(--danger)');
+  G.money-=cost; G.auto[id]=lvl+1; sfx('cash'); toast(`${d.name} ${d.max>1?'L'+(lvl+1):'enabled'}`,'var(--good)'); save(); openAuto();
+}
+function setAutoRisk(v){ G.autoExtractRisk=clamp(+v,10,90); save(); if(document.querySelector('.overlay'))openAuto(); }
+function openAuto(){
+  const o=document.createElement('div'); o.className='overlay'; o.id='auto-ov';
+  const rows=AUTO_UP.map(u=>{
+    const lvl=autoLvl(u.id), maxed=lvl>=u.max, cost=autoCost(u.id);
+    const status = u.id==='scav'&&lvl>0? `every ${autoScavInterval().toFixed(1)}s` : lvl>0?'ON':'off';
+    return `<div class="loc" style="cursor:default"><div class="spread">
+      <div><b>${u.icon} ${u.name}</b> <span class="muted">${u.max>1?`L${lvl}/${u.max} · ${status}`:status}</span>
+        <div class="muted" style="font-size:11px">${u.desc}</div></div>
+      <div>${maxed?'<span class="tag" style="color:var(--good);border-color:var(--good)">'+(u.max>1?'MAX':'ON')+'</span>'
+        :`<button class="sm" onclick="buyAuto('${u.id}')" ${G.money>=cost?'':'disabled'}>${fmt(cost)}₽</button>`}</div>
+    </div>${u.id==='extract'&&lvl>0?`<div class="row" style="margin-top:6px"><span class="muted" style="font-size:11px">Bug out at risk ≥</span>
+      <input type="range" min="10" max="90" value="${G.autoExtractRisk}" oninput="setAutoRisk(this.value)" style="flex:1"><b>${G.autoExtractRisk}%</b></div>`:''}</div>`;
+  }).join('');
+  o.innerHTML=`<div class="panel" style="width:560px;max-width:94vw;max-height:88vh;overflow:auto">
+    <div class="spread"><h2 style="border:none;margin:0">⚙ Automation</h2>
+      <button class="sm" onclick="toggleMute()">${G.muted?'🔇 Muted':'🔊 Sound'}</button></div>
+    <div class="muted" style="font-size:12px;margin:4px 0 10px">Buy automation so raids run themselves — set it up, then watch the loot roll in.</div>
+    ${rows}
+    <button class="wide primary" style="margin-top:12px" onclick="closeOv()">Close</button>
+  </div>`;
+  $('overlay-root').innerHTML=''; $('overlay-root').appendChild(o);
+}
+
+function updateMailBadge(){
+  const n=unreadMail(), b=$('mailbadge'), mb=$('mailBtn');
+  if(b) b.textContent = n? ' '+n : '';
+  if(mb){ mb.style.borderColor = n?'var(--accent)':''; mb.style.color = n?'var(--accent)':''; }
+}
+
+/* ---------- Loot tiers ---------- */
+const TIERS = {
+  junk:{color:'var(--tier-junk)'}, common:{color:'var(--tier-common)'},
+  rare:{color:'var(--tier-rare)'}, epic:{color:'var(--tier-epic)'},
+  legendary:{color:'var(--tier-legendary)'},
+};
+const LOOT = {
+  junk:      [['Bolts',180],['Duct Tape',220],['Screw Nut',150],['Matches',90],['Toothpaste',400],['Wires',1100]],
+  common:    [['AA Battery',900],['Salewa Kit',1800],['Toolset',2400],['Painkillers',1500],['Power Cord',2100],['Energy Drink',1300]],
+  rare:      [['Graphics Card',38000],['Fuel Conditioner',32000],['Tetriz',31000],['Gas Analyzer',26000],['Capacitor',22000],['Military Cable',24000]],
+  epic:      [['LEDX',120000],['Ophthalmoscope',95000],['Defibrillator',88000],['Intel Folder',70000],['Virtex',105000]],
+  legendary: [['Bitcoin',420000],['GPU Rig',650000],['Moonshine Crate',310000],['Lab Workbench',280000]],
+};
+
+/* ---------- WEAPONS (caliber + handling; ammo carries damage) ---------- */
+const WEAPONS = [
+  // 9x18
+  {name:'Makarov PM',cal:'9x18',dmgMod:0.90,ergo:62,rate:2.0,val:8000},
+  {name:'PB 9x18',cal:'9x18',dmgMod:0.92,ergo:55,rate:2.2,val:14000},
+  // 9x19
+  {name:'Glock 18C',cal:'9x19',dmgMod:0.95,ergo:60,rate:4.2,val:30000},
+  {name:'PP-19 Vityaz',cal:'9x19',dmgMod:1.00,ergo:48,rate:3.4,val:33000},
+  {name:'MP5',cal:'9x19',dmgMod:1.00,ergo:52,rate:3.6,val:42000},
+  {name:'MPX',cal:'9x19',dmgMod:1.02,ergo:50,rate:3.6,val:55000},
+  // 7.62x39
+  {name:'SKS',cal:'7.62x39',dmgMod:1.05,ergo:40,rate:1.6,val:28000},
+  {name:'AKM',cal:'7.62x39',dmgMod:1.10,ergo:38,rate:2.8,val:55000},
+  {name:'RD-704',cal:'7.62x39',dmgMod:1.12,ergo:42,rate:3.0,val:120000},
+  // 5.45x39
+  {name:'AKS-74U',cal:'5.45x39',dmgMod:1.00,ergo:46,rate:3.2,val:38000},
+  {name:'AK-74N',cal:'5.45x39',dmgMod:1.08,ergo:44,rate:3.0,val:62000},
+  {name:'RPK-16',cal:'5.45x39',dmgMod:1.10,ergo:30,rate:3.4,val:110000},
+  // 5.56x45
+  {name:'ADAR 2-15',cal:'5.56x45',dmgMod:1.00,ergo:48,rate:2.4,val:40000},
+  {name:'M4A1',cal:'5.56x45',dmgMod:1.12,ergo:50,rate:4.0,val:150000},
+  {name:'SCAR-L',cal:'5.56x45',dmgMod:1.12,ergo:46,rate:3.8,val:180000},
+  {name:'HK 416A5',cal:'5.56x45',dmgMod:1.14,ergo:52,rate:4.0,val:230000},
+  // 7.62x51
+  {name:'M1A',cal:'7.62x51',dmgMod:1.18,ergo:36,rate:1.8,val:150000},
+  {name:'SCAR-H',cal:'7.62x51',dmgMod:1.20,ergo:42,rate:3.0,val:260000},
+  {name:'SR-25',cal:'7.62x51',dmgMod:1.20,ergo:44,rate:2.6,val:300000},
+  // 7.62x54R
+  {name:'Mosin',cal:'7.62x54R',dmgMod:1.25,ergo:28,rate:0.9,val:35000},
+  {name:'SV-98',cal:'7.62x54R',dmgMod:1.25,ergo:26,rate:0.8,val:95000},
+  {name:'SVDS',cal:'7.62x54R',dmgMod:1.22,ergo:32,rate:1.4,val:130000},
+  // 9x39
+  {name:'VSS Vintorez',cal:'9x39',dmgMod:1.12,ergo:40,rate:2.4,val:160000},
+  {name:'AS VAL',cal:'9x39',dmgMod:1.14,ergo:44,rate:4.6,val:210000},
+  // 12.7x55
+  {name:'RSh-12',cal:'12.7x55',dmgMod:1.20,ergo:50,rate:1.2,val:90000},
+  {name:'ASh-12',cal:'12.7x55',dmgMod:1.25,ergo:34,rate:2.2,val:170000},
+  // 12 gauge
+  {name:'MP-153',cal:'12g',dmgMod:1.00,ergo:40,rate:1.6,val:22000},
+  {name:'M870',cal:'12g',dmgMod:1.00,ergo:42,rate:1.2,val:30000},
+  {name:'Saiga-12',cal:'12g',dmgMod:1.05,ergo:38,rate:2.4,val:60000},
+  // .45 ACP
+  {name:'M1911A1',cal:'.45',dmgMod:0.95,ergo:58,rate:2.0,val:18000},
+  {name:'UMP-45',cal:'.45',dmgMod:1.00,ergo:48,rate:3.2,val:50000},
+  {name:'Vector .45',cal:'.45',dmgMod:1.02,ergo:54,rate:5.0,val:120000},
+];
+const WPN_BY_NAME = Object.fromEntries(WEAPONS.map(w=>[w.name,w]));
+
+/* ---------- AMMO (damage + penetration) ---------- */
+const AMMO = [
+  {name:'9x18 PM gzh',cal:'9x18',dmg:50,pen:5,val:40},
+  {name:'9x18 PMM PstM',cal:'9x18',dmg:46,pen:13,val:90},
+  {name:'9x18 SP-7',cal:'9x18',dmg:65,pen:8,val:120},
+  {name:'9x19 PST gzh',cal:'9x19',dmg:54,pen:8,val:60},
+  {name:'9x19 AP 6.3',cal:'9x19',dmg:42,pen:30,val:230},
+  {name:'9x19 PBP',cal:'9x19',dmg:39,pen:39,val:340},
+  {name:'7.62x39 PS',cal:'7.62x39',dmg:57,pen:20,val:90},
+  {name:'7.62x39 PP',cal:'7.62x39',dmg:53,pen:31,val:140},
+  {name:'7.62x39 BP',cal:'7.62x39',dmg:58,pen:47,val:280},
+  {name:'7.62x39 MAI AP',cal:'7.62x39',dmg:53,pen:58,val:520},
+  {name:'5.45x39 PS',cal:'5.45x39',dmg:50,pen:31,val:90},
+  {name:'5.45x39 BT',cal:'5.45x39',dmg:49,pen:37,val:160},
+  {name:'5.45x39 BS',cal:'5.45x39',dmg:47,pen:51,val:340},
+  {name:'5.45x39 7N40',cal:'5.45x39',dmg:46,pen:62,val:600},
+  {name:'5.56 M855',cal:'5.56x45',dmg:54,pen:31,val:120},
+  {name:'5.56 M856A1',cal:'5.56x45',dmg:58,pen:38,val:260},
+  {name:'5.56 M855A1',cal:'5.56x45',dmg:54,pen:37,val:220},
+  {name:'5.56 M995',cal:'5.56x45',dmg:42,pen:53,val:480},
+  {name:'7.62x51 M80',cal:'7.62x51',dmg:80,pen:41,val:180},
+  {name:'7.62x51 M61',cal:'7.62x51',dmg:70,pen:64,val:560},
+  {name:'7.62x51 M993',cal:'7.62x51',dmg:67,pen:70,val:780},
+  {name:'7.62x54R LPS gzh',cal:'7.62x54R',dmg:84,pen:41,val:120},
+  {name:'7.62x54R SNB',cal:'7.62x54R',dmg:82,pen:54,val:420},
+  {name:'7.62x54R BS',cal:'7.62x54R',dmg:72,pen:70,val:760},
+  {name:'9x39 SP-5',cal:'9x39',dmg:72,pen:30,val:230},
+  {name:'9x39 SP-6',cal:'9x39',dmg:58,pen:42,val:380},
+  {name:'9x39 BP',cal:'9x39',dmg:58,pen:48,val:520},
+  {name:'12.7x55 PS12A',cal:'12.7x55',dmg:140,pen:10,val:350},
+  {name:'12.7x55 PS12',cal:'12.7x55',dmg:115,pen:18,val:300},
+  {name:'12.7x55 PS12B',cal:'12.7x55',dmg:85,pen:55,val:700},
+  {name:'12g Magnum Buck',cal:'12g',dmg:50,pen:2,val:60},
+  {name:'12g Flechette',cal:'12g',dmg:25,pen:31,val:180},
+  {name:'12g AP-20 slug',cal:'12g',dmg:164,pen:37,val:340},
+  {name:'.45 Match FMJ',cal:'.45',dmg:72,pen:13,val:90},
+  {name:'.45 AP',cal:'.45',dmg:62,pen:38,val:330},
+  {name:'.45 RIP',cal:'.45',dmg:127,pen:3,val:160},
+];
+const AMMO_BY_NAME = Object.fromEntries(AMMO.map(a=>[a.name,a]));
+const AMMO_BY_CAL = {};
+AMMO.forEach(a=>{ (AMMO_BY_CAL[a.cal]=AMMO_BY_CAL[a.cal]||[]).push(a); });
+
+/* ---------- BODY ARMOR (armor class) ---------- */
+const ARMORS = [
+  {name:'PACA Soft',cls:2,val:8000},
+  {name:'Module-3M',cls:3,val:22000},
+  {name:'6B23-1',cls:4,val:46000},
+  {name:'Hexgrid',cls:4,val:60000},
+  {name:'Korund-VM',cls:5,val:120000},
+  {name:'Slick Plate',cls:6,val:260000},
+  {name:'6B43 Zabralo',cls:6,val:300000},
+  {name:'THOR Gen2',cls:6,val:420000},
+];
+/* ---------- HELMETS (head armor class) ---------- */
+const HELMETS = [
+  {name:'No Helmet',cls:0,val:0},
+  {name:'SSh-68',cls:2,val:6000},
+  {name:'6B47 Ratnik',cls:3,val:24000},
+  {name:'FAST MT',cls:3,val:40000},
+  {name:'Ops-Core FAST',cls:3,val:70000},
+  {name:'Altyn',cls:4,val:95000},
+  {name:'Rys-T',cls:4,val:110000},
+  {name:'LShZ-2DTM',cls:5,val:160000},
+  {name:'Vulkan-5',cls:6,val:230000},
+];
+
+const ARMOR_BY_NAME = Object.fromEntries(ARMORS.map(a=>[a.name,a]));
+const HELMET_BY_NAME = Object.fromEntries(HELMETS.map(h=>[h.name,h]));
+
+/* ---------- CARRY CAPACITY (points) ---------- */
+// Every container holds a number of points; every item costs points to carry.
+const POCKET_POINTS = 4;   // your pockets always give a little space
+
+const BACKPACKS = [
+  {name:'Scav Backpack',pts:16,val:5000},
+  {name:'MBSS',pts:24,val:18000},
+  {name:'6Sh118 Raid',pts:32,val:42000},
+  {name:'Berkut',pts:42,val:75000},
+  {name:'Tri-Zip',pts:56,val:160000},
+  {name:'Pilgrim',pts:72,val:300000},
+];
+const BACKPACK_BY_NAME = Object.fromEntries(BACKPACKS.map(b=>[b.name,b]));
+
+/* ---------- TACTICAL RIGS (extra carry capacity) ---------- */
+const RIGS = [
+  {name:'Scav Vest',pts:4,val:3000},
+  {name:'Chest Rig MK3',pts:8,val:14000},
+  {name:'6Sh112',pts:10,val:28000},
+  {name:'TV-110',pts:14,val:55000},
+  {name:'ANA Tactical M2',pts:18,val:95000},
+];
+const RIG_BY_NAME = Object.fromEntries(RIGS.map(r=>[r.name,r]));
+
+// how many points an item costs to carry
+function itemPoints(it){
+  if(it.kind==='weapon')   return 10;   // rifles/guns are bulky
+  if(it.kind==='backpack') return 8;
+  if(it.kind==='armor')    return 6;
+  if(it.kind==='rig')      return 4;
+  if(it.kind==='helmet')   return 2;
+  if(it.kind==='ammo'||it.kind==='med'||it.kind==='key') return 1;
+  // general loot scales with tier (value-dense items are small)
+  return ({junk:1,common:1,rare:2,epic:3,legendary:4})[it.tier]||1;
+}
+
+/* ---------- MEDS (use in-raid to heal & stop bleeding) ---------- */
+const MEDS = [
+  {name:'Bandage',     heal:0,  cure:1,        val:1200},
+  {name:'AI-2 Medkit', heal:20, cure:0,        val:1800},
+  {name:'Aseptic Bandage', heal:12, cure:1,    val:2600},
+  {name:'Salewa',      heal:45, cure:1,        val:7000},
+  {name:'CALOK-B',     heal:8,  cure:99,       val:6500},
+  {name:'IFAK',        heal:55, cure:2,        val:13000},
+  {name:'Grizzly',     heal:95, cure:99,       val:24000},
+  {name:'Surv12',      heal:100,cure:99,       val:48000},
+];
+const MED_BY_NAME = Object.fromEntries(MEDS.map(m=>[m.name,m]));
+
+/* ---------- MAGAZINE SIZES (real-world standard capacity, rounds) ---------- */
+const MAG_SIZE = {
+  'Makarov PM':8,      // 8-round box
+  'PB 9x18':8,         // uses the Makarov 8-round mag
+  'Glock 18C':17,      // standard Glock 17-round
+  'M1911A1':7,         // single-stack 7-round
+  'UMP-45':25,         // 25-round box
+  'Vector .45':25,     // KRISS 25-round stick
+  'PP-19 Vityaz':30,   // 30-round
+  'MP5':30,'MPX':30,
+  'SKS':10,            // fixed 10-round internal
+  'AKM':30,'RD-704':30,
+  'AKS-74U':30,'AK-74N':30,
+  'RPK-16':95,         // signature 95-round drum
+  'ADAR 2-15':30,'M4A1':30,'SCAR-L':30,'HK 416A5':30,
+  'M1A':20,'SCAR-H':20,'SR-25':20,
+  'Mosin':5,           // 5-round internal
+  'SV-98':10,'SVDS':10,// SVD pattern 10-round
+  'VSS Vintorez':10,   // standard VSS 10-round (20 is the VAL mag)
+  'AS VAL':20,
+  'RSh-12':5,          // 5-shot cylinder
+  'ASh-12':10,
+  'MP-153':7,'M870':7, // tube-fed
+  'Saiga-12':8,        // 8-round box
+};
+function weaponMag(w){ return MAG_SIZE[w.name] || 30; }
+
+/* ---------- GUN LEVELS 1-6 (mastery improves the weapon) ---------- */
+const GUN_THRESH = [4,12,25,45,75];   // kills needed to reach L2..L6
+function gunKills(name){ return G.gunLevels[name]||0; }
+function gunLevel(name){ let l=1; const k=gunKills(name); for(const t of GUN_THRESH){ if(k>=t) l++; else break; } return l; }
+function gunNextThresh(name){ const l=gunLevel(name); return l>=6? null : GUN_THRESH[l-1]; }
+function gunUpgradeCost(w){ const nl=gunLevel(w.name)+1; if(nl>6) return null; return Math.round((18000 + w.val*0.45) * nl); }
+function upgradeGun(name){
+  const w0=WPN_BY_NAME[name]; if(!w0) return;
+  const nl=gunLevel(name)+1; if(nl>6) return toast('Already max level','var(--warn)');
+  const cost=gunUpgradeCost(w0); if(G.money<cost) return toast('Not enough roubles','var(--danger)');
+  G.money-=cost; G.gunLevels[name]=GUN_THRESH[nl-2];   // jump to the threshold for the new level
+  toast(`${name} trained to L${nl}`,'var(--good)');
+}
+// apply level bonuses: more damage and better handling. Mag stays at the real-world capacity.
+function effWeapon(w){
+  if(!w) return w;
+  const lvl=gunLevel(w.name);
+  return {...w, level:lvl,
+    dmgMod: w.dmgMod*(1+0.05*(lvl-1)),
+    ergo:   w.ergo + 3*(lvl-1),
+    mag:    weaponMag(w),
+  };
+}
+
+/* ---------- TRADERS (loyalty levels 1-6 via mission EXP + money spent) ---------- */
+// Loyalty level requirements: reach a level when BOTH exp and spent thresholds are met.
+const LEVEL_REQ = [
+  {lvl:2, exp:100,  spent:60000},
+  {lvl:3, exp:320,  spent:220000},
+  {lvl:4, exp:750,  spent:550000},
+  {lvl:5, exp:1600, spent:1300000},
+  {lvl:6, exp:3200, spent:3200000},
+];
+const TRADERS = [
+  {id:'prapor', name:'Prapor', blurb:'Russian arms dealer — AKs, x18, and crates of ammo.',
+    stock:{
+      weapons:[{n:'Makarov PM',ll:1},{n:'AKS-74U',ll:1},{n:'SKS',ll:1},{n:'AKM',ll:2},{n:'AK-74N',ll:2},{n:'RD-704',ll:3},{n:'RPK-16',ll:3},{n:'ASh-12',ll:4},{n:'RSh-12',ll:4}],
+      ammo:[{n:'9x18 PM gzh',ll:1},{n:'9x18 PMM PstM',ll:2},{n:'7.62x39 PS',ll:1},{n:'7.62x39 PP',ll:2},{n:'7.62x39 BP',ll:3},{n:'7.62x39 MAI AP',ll:4},{n:'5.45x39 PS',ll:1},{n:'5.45x39 BT',ll:2},{n:'5.45x39 BS',ll:3},{n:'5.45x39 7N40',ll:4},{n:'12.7x55 PS12',ll:3},{n:'12.7x55 PS12B',ll:4}],
+      armors:[], helmets:[]},
+    missions:[
+      {name:'Debut', desc:'Kill 3 hostiles in any raid.', type:'kills', target:3, exp:80, cash:25000},
+      {name:'Shootout', desc:'Kill 5 hostiles on Customs.', type:'killsAt', loc:'customs', target:5, exp:150, cash:40000},
+      {name:'Supplier', desc:'Spend ₽150,000 with Prapor.', type:'spend', target:150000, exp:200, cash:30000},
+      {name:'BP Depot', desc:'Extract from 4 raids.', type:'extracts', target:4, exp:260, cash:60000, reqLevel:2},
+      {name:'Punisher', desc:'Kill 20 hostiles total.', type:'kills', target:20, exp:600, cash:150000, reqLevel:3},
+    ]},
+  {id:'peacekeeper', name:'Peacekeeper', blurb:'Western hardware — M4s, NATO calibers, Ops-Core.',
+    stock:{
+      weapons:[{n:'Glock 18C',ll:1},{n:'MP5',ll:1},{n:'ADAR 2-15',ll:1},{n:'MPX',ll:2},{n:'M4A1',ll:2},{n:'M1A',ll:2},{n:'SCAR-L',ll:3},{n:'SCAR-H',ll:3},{n:'HK 416A5',ll:4},{n:'SR-25',ll:4}],
+      ammo:[{n:'9x19 PST gzh',ll:1},{n:'9x19 AP 6.3',ll:2},{n:'9x19 PBP',ll:3},{n:'5.56 M855',ll:1},{n:'5.56 M855A1',ll:2},{n:'5.56 M856A1',ll:2},{n:'5.56 M995',ll:4},{n:'7.62x51 M80',ll:2},{n:'7.62x51 M61',ll:3},{n:'7.62x51 M993',ll:4}],
+      helmets:[{n:'FAST MT',ll:2},{n:'Ops-Core FAST',ll:3}], armors:[]},
+    missions:[
+      {name:'Checking', desc:'Extract from 2 raids.', type:'extracts', target:2, exp:100, cash:30000},
+      {name:'Recon', desc:'Kill 6 hostiles on Woods.', type:'killsAt', loc:'woods', target:6, exp:180, cash:50000},
+      {name:'Western Supply', desc:'Spend ₽250,000 with Peacekeeper.', type:'spend', target:250000, exp:250, cash:40000, reqLevel:2},
+      {name:'Test Drive', desc:'Kill 15 hostiles total.', type:'kills', target:15, exp:420, cash:120000, reqLevel:3},
+      {name:'Spec Ops', desc:'Extract from Streets 3 times.', type:'extractsAt', loc:'streets', target:3, exp:720, cash:200000, reqLevel:4},
+    ]},
+  {id:'mechanic', name:'Mechanic', blurb:'Exotic & meta — VAL/VSS, 12.7, .45, the best rounds.',
+    stock:{
+      weapons:[{n:'M1911A1',ll:1},{n:'PP-19 Vityaz',ll:1},{n:'UMP-45',ll:2},{n:'Vector .45',ll:3},{n:'VSS Vintorez',ll:3},{n:'AS VAL',ll:4}],
+      ammo:[{n:'.45 Match FMJ',ll:1},{n:'.45 RIP',ll:2},{n:'.45 AP',ll:3},{n:'9x39 SP-5',ll:2},{n:'9x39 SP-6',ll:3},{n:'9x39 BP',ll:4},{n:'12.7x55 PS12A',ll:2}],
+      helmets:[{n:'LShZ-2DTM',ll:3},{n:'Vulkan-5',ll:4}], armors:[]},
+    missions:[
+      {name:'Gunsmith', desc:'Kill 5 hostiles total.', type:'kills', target:5, exp:120, cash:35000},
+      {name:'Bullet Rain', desc:'Spend ₽200,000 with Mechanic.', type:'spend', target:200000, exp:200, cash:30000},
+      {name:'Silent Ops', desc:'Kill 5 hostiles on Lighthouse.', type:'killsAt', loc:'lighthouse', target:5, exp:320, cash:90000, reqLevel:2},
+      {name:'Keycard', desc:'Find a Labs Access Keycard.', type:'keys', target:1, exp:800, cash:250000, reqLevel:3},
+      {name:'Lab Tech', desc:'Extract from The Lab once.', type:'extractsAt', loc:'labs', target:1, exp:1000, cash:400000, reqLevel:4},
+    ]},
+  {id:'ragman', name:'Ragman', blurb:'Armor, helmets & backpacks — carry more, survive more.',
+    stock:{
+      armors:[{n:'PACA Soft',ll:1},{n:'Module-3M',ll:1},{n:'6B23-1',ll:2},{n:'Hexgrid',ll:2},{n:'Korund-VM',ll:3},{n:'Slick Plate',ll:4},{n:'6B43 Zabralo',ll:4},{n:'THOR Gen2',ll:4}],
+      helmets:[{n:'SSh-68',ll:1},{n:'6B47 Ratnik',ll:2},{n:'Altyn',ll:3},{n:'Rys-T',ll:3}],
+      backpacks:[{n:'Scav Backpack',ll:1},{n:'MBSS',ll:1},{n:'6Sh118 Raid',ll:2},{n:'Berkut',ll:3},{n:'Tri-Zip',ll:3},{n:'Pilgrim',ll:4}],
+      rigs:[{n:'Scav Vest',ll:1},{n:'Chest Rig MK3',ll:1},{n:'6Sh112',ll:2},{n:'TV-110',ll:3},{n:'ANA Tactical M2',ll:4}],
+      weapons:[], ammo:[]},
+    missions:[
+      {name:'Dressed to Kill', desc:'Extract from 3 raids.', type:'extracts', target:3, exp:100, cash:30000},
+      {name:'Armored', desc:'Spend ₽200,000 with Ragman.', type:'spend', target:200000, exp:220, cash:25000},
+      {name:'Big Sale', desc:'Spend ₽600,000 with Ragman.', type:'spend', target:600000, exp:400, cash:60000, reqLevel:2},
+      {name:'Heavy Trooper', desc:'Kill 8 hostiles on Streets.', type:'killsAt', loc:'streets', target:8, exp:620, cash:150000, reqLevel:3},
+    ]},
+  {id:'jaeger', name:'Jaeger', blurb:'Marksman rifles & shotguns. The woods are his.',
+    stock:{
+      weapons:[{n:'MP-153',ll:1},{n:'M870',ll:1},{n:'Mosin',ll:1},{n:'Saiga-12',ll:2},{n:'SV-98',ll:2},{n:'SVDS',ll:3}],
+      ammo:[{n:'7.62x54R LPS gzh',ll:1},{n:'7.62x54R SNB',ll:2},{n:'7.62x54R BS',ll:4},{n:'12g Magnum Buck',ll:1},{n:'12g Flechette',ll:2},{n:'12g AP-20 slug',ll:3}],
+      armors:[], helmets:[]},
+    missions:[
+      {name:'The Survivalist', desc:'Extract from Woods 2 times.', type:'extractsAt', loc:'woods', target:2, exp:100, cash:25000},
+      {name:'Marked', desc:'Kill 10 hostiles on Woods.', type:'killsAt', loc:'woods', target:10, exp:250, cash:60000},
+      {name:'Trophy', desc:'Reach 90m depth in a single raid.', type:'depth', target:90, exp:320, cash:80000, reqLevel:2},
+      {name:'The Hunter', desc:'Kill 25 hostiles total.', type:'kills', target:25, exp:720, cash:180000, reqLevel:3},
+    ]},
+  {id:'therapist', name:'Therapist', blurb:'Meds & medkits — bandages, IFAKs, stop the bleeding.',
+    stock:{
+      meds:[{n:'Bandage',ll:1},{n:'AI-2 Medkit',ll:1},{n:'Aseptic Bandage',ll:1},{n:'Salewa',ll:2},{n:'CALOK-B',ll:2},{n:'IFAK',ll:3},{n:'Grizzly',ll:4},{n:'Surv12',ll:4}],
+      weapons:[], ammo:[], armors:[], helmets:[]},
+    missions:[
+      {name:'First Aid', desc:'Extract from 2 raids.', type:'extracts', target:2, exp:100, cash:25000},
+      {name:'Healthcare Privacy', desc:'Spend ₽150,000 with Therapist.', type:'spend', target:150000, exp:200, cash:30000},
+      {name:'Sanitary Standards', desc:'Survive 5 raids (extract).', type:'extracts', target:5, exp:300, cash:70000, reqLevel:2},
+      {name:'Operation Aquarius', desc:'Extract from Lighthouse 2 times.', type:'extractsAt', loc:'lighthouse', target:2, exp:520, cash:140000, reqLevel:3},
+    ]},
+];
+const TRADER_BY_ID = Object.fromEntries(TRADERS.map(t=>[t.id,t]));
+function resolveWare(cat,name){
+  return cat==='weapons'?WPN_BY_NAME[name] : cat==='ammo'?AMMO_BY_NAME[name]
+       : cat==='armors'?ARMOR_BY_NAME[name] : cat==='helmets'?HELMET_BY_NAME[name]
+       : cat==='backpacks'?BACKPACK_BY_NAME[name] : cat==='rigs'?RIG_BY_NAME[name] : MED_BY_NAME[name];
+}
+
+/* ---------- ENEMY ARCHETYPES ---------- */
+// dmg/aim raised across the board; bleed = chance a hit makes you bleed (needs a bandage).
+// guns = the weapon pool this enemy carries; one is a guaranteed drop on kill.
+const ENEMY = {
+  scav:    {name:'Scav',        hp:35, armorCls:0, helmetCls:0, dmg:13, aim:8,  bleed:0.15, guns:['Makarov PM','SKS','MP-153','AKS-74U']},
+  raider:  {name:'Raider',      hp:80, armorCls:5, helmetCls:4, dmg:28, aim:15, bleed:0.55, guns:['AK-74N','RD-704','HK 416A5','RPK-16']},
+  rogue:   {name:'Rogue',       hp:75, armorCls:5, helmetCls:3, dmg:25, aim:15, bleed:0.45, guns:['M1A','SCAR-H','SR-25']},
+  pmc:     {name:'PMC',         hp:80, armorCls:4, helmetCls:3, dmg:22, aim:14, bleed:0.30, guns:['M4A1','AKM','SCAR-L','AK-74N']},
+  sniper:  {name:'PMC Sniper',  hp:64, armorCls:4, helmetCls:4, dmg:44, aim:17, bleed:0.50, guns:['SV-98','Mosin','SVDS']},
+  cultist: {name:'Cultist',     hp:74, armorCls:2, helmetCls:0, dmg:28, aim:12, bleed:0.75, guns:['VSS Vintorez','AS VAL','Saiga-12']},
+  guard:   {name:'Boss Guard',  hp:110,armorCls:5, helmetCls:4, dmg:28, aim:15, bleed:0.50, guns:['RPK-16','AK-74N','SCAR-H']},
+  killa:   {name:'Killa',       hp:150,armorCls:6, helmetCls:5, dmg:34, aim:16, bleed:0.60, guns:['RPK-16']},
+  tagilla: {name:'Tagilla',     hp:165,armorCls:6, helmetCls:6, dmg:38, aim:14, bleed:0.60, guns:['MP-153','Saiga-12']},
+};
+
+/* ---------- LOCATIONS ---------- */
+const LOCATIONS = [
+  {id:'customs', name:'CUSTOMS', desc:'Crowded, low value. Good for new scavs.',
+    risk:0.7, combat:0.18, raidLen:55, enemies:['scav','scav','scav','pmc'],
+    lootBias:{junk:50,common:38,rare:10,epic:2,legendary:0}},
+  {id:'woods', name:'WOODS', desc:'Quiet but ambush-prone. Decent finds.',
+    risk:1.0, combat:0.26, raidLen:65, enemies:['scav','scav','pmc','sniper'],
+    lootBias:{junk:34,common:42,rare:18,epic:5,legendary:1}},
+  {id:'lighthouse', name:'LIGHTHOUSE', desc:'Rogues guard real money. High danger.',
+    risk:1.7, combat:0.40, raidLen:75, enemies:['rogue','rogue','pmc','sniper'],
+    lootBias:{junk:18,common:36,rare:30,epic:13,legendary:3}},
+  {id:'streets', name:'STREETS OF TARKOV', desc:'Urban warzone. Big loot, big firefights.',
+    risk:2.1, combat:0.48, raidLen:80, enemies:['pmc','pmc','sniper','cultist','guard'],
+    lootBias:{junk:10,common:30,rare:33,epic:20,legendary:7}},
+  {id:'labs', name:'THE LAB', desc:'Keycard only. The best loot in the zone — and the deadliest.',
+    risk:3.2, combat:0.62, raidLen:90, gated:true, enemies:['raider','raider','guard','killa','tagilla'],
+    lootBias:{junk:4,common:18,rare:32,epic:28,legendary:18}},
+];
+
+const RAIDER_NAMES = ['Volkov','Kozlov','Reaper','Boris','Ghost','Nikita','Smirnov','Pavel','Dmitri','Cipher','Mongo','Tarkov-Joe'];
+
+// what a raider prioritizes on a run — biases what they bring back (and the risk)
+const RAID_FOCUS = {
+  loot:      {name:'Best Loot',   icon:'💎', desc:'Balanced — highest overall value.'},
+  gear:      {name:'Guns & Gear', icon:'⚔',  desc:'Weapons, armor & helmets for your arsenal.'},
+  resources: {name:'Resources',   icon:'🔧', desc:'Crafting materials — plays it safe.'},
+  pvp:       {name:'Hunt PMCs',   icon:'💀', desc:'Fights for kit — risky but lucrative.'},
+};
+
+/* ============================================================
+   BASE / HIDEOUT — materials, modules, crafting recipes
+   ============================================================ */
+const MATERIALS = ['Scrap Metal','Electronics','Gunpowder','Medical Supplies','Fuel','Polymer'];
+const MATERIAL_PRICE = {'Scrap Metal':3000,'Electronics':9000,'Gunpowder':5000,'Medical Supplies':7000,'Fuel':6000,'Polymer':4000};
+
+// each module has tiers[L-1] = cost to reach level L: {money, mats, time(sec), req?}
+const MODULES = [
+  {id:'generator', name:'Generator', icon:'⚡', desc:'Supplies power. Required to upgrade advanced stations.', tiers:[
+    {money:25000, mats:{'Fuel':2,'Electronics':1}, time:25},
+    {money:90000, mats:{'Fuel':4,'Electronics':3}, time:60},
+    {money:300000, mats:{'Fuel':8,'Electronics':6}, time:120},
+  ]},
+  {id:'barracks', name:'Barracks', icon:'🛏', desc:'Beds for hired raiders — +2 capacity per level.', tiers:[
+    {money:0, mats:{}, time:0},
+    {money:60000, mats:{'Scrap Metal':4,'Polymer':2}, time:45},
+    {money:200000, mats:{'Scrap Metal':8,'Polymer':4}, time:90, req:{generator:1}},
+    {money:600000, mats:{'Scrap Metal':14,'Electronics':4}, time:150, req:{generator:2}},
+  ]},
+  {id:'workbench', name:'Workbench', icon:'🔨', desc:'Craft weapons, armor & ammo.', tiers:[
+    {money:40000, mats:{'Scrap Metal':3}, time:30},
+    {money:150000, mats:{'Scrap Metal':6,'Electronics':2}, time:75, req:{generator:1}},
+    {money:450000, mats:{'Scrap Metal':12,'Electronics':5}, time:140, req:{generator:2}},
+  ]},
+  {id:'medstation', name:'Med Station', icon:'⚕', desc:'Craft meds, bandages & kits.', tiers:[
+    {money:35000, mats:{'Medical Supplies':2}, time:30},
+    {money:130000, mats:{'Medical Supplies':5,'Polymer':2}, time:70, req:{generator:1}},
+    {money:380000, mats:{'Medical Supplies':10,'Electronics':3}, time:130, req:{generator:2}},
+  ]},
+  {id:'intel', name:'Intel Center', icon:'🛰', desc:'Faster raider ops, richer loot, craft keycards.', tiers:[
+    {money:80000, mats:{'Electronics':3}, time:50, req:{generator:1}},
+    {money:280000, mats:{'Electronics':6,'Fuel':3}, time:110, req:{generator:2}},
+    {money:800000, mats:{'Electronics':12,'Fuel':6}, time:180, req:{generator:3}},
+  ]},
+  {id:'bitcoin', name:'Bitcoin Farm', icon:'₿', desc:'Passively generates Physical Bitcoin — even while you are away.', tiers:[
+    {money:150000, mats:{'Electronics':4,'Fuel':2}, time:60, req:{generator:1}},
+    {money:450000, mats:{'Electronics':8,'Fuel':4}, time:120, req:{generator:2}},
+    {money:1200000, mats:{'Electronics':16,'Fuel':8}, time:200, req:{generator:3}},
+  ]},
+];
+const BTC_VALUE = 420000;
+function btcRate(lvl){ return [0.010,0.018,0.030][lvl-1]||0; }   // bitcoins per second
+function btcCap(lvl){ return lvl*3; }                            // storage before it stops
+const MODULE_BY_ID = Object.fromEntries(MODULES.map(m=>[m.id,m]));
+
+const RECIPES = [
+  // Workbench — ammo
+  {id:'r_762bp', mod:'workbench', lvl:1, name:'7.62x39 BP ×40', time:40, money:8000, mats:{'Gunpowder':2,'Scrap Metal':1}, out:{kind:'ammo',name:'7.62x39 BP',count:40}},
+  {id:'r_545bs', mod:'workbench', lvl:1, name:'5.45x39 BS ×40', time:45, money:10000, mats:{'Gunpowder':2,'Scrap Metal':1}, out:{kind:'ammo',name:'5.45x39 BS',count:40}},
+  {id:'r_m995', mod:'workbench', lvl:2, name:'5.56 M995 ×30', time:70, money:20000, mats:{'Gunpowder':3,'Electronics':1}, out:{kind:'ammo',name:'5.56 M995',count:30}},
+  {id:'r_m61', mod:'workbench', lvl:2, name:'7.62x51 M61 ×30', time:75, money:24000, mats:{'Gunpowder':4,'Scrap Metal':2}, out:{kind:'ammo',name:'7.62x51 M61',count:30}},
+  // Workbench — gear
+  {id:'r_akm', mod:'workbench', lvl:1, name:'AKM Rifle', time:50, money:25000, mats:{'Scrap Metal':4,'Polymer':1}, out:{kind:'weapon',name:'AKM'}},
+  {id:'r_m4', mod:'workbench', lvl:2, name:'M4A1 Rifle', time:100, money:70000, mats:{'Scrap Metal':6,'Electronics':2,'Polymer':2}, out:{kind:'weapon',name:'M4A1'}},
+  {id:'r_6b23', mod:'workbench', lvl:1, name:'6B23-1 Armor', time:60, money:20000, mats:{'Scrap Metal':3,'Polymer':2}, out:{kind:'armor',name:'6B23-1'}},
+  {id:'r_korund', mod:'workbench', lvl:2, name:'Korund-VM Armor', time:110, money:60000, mats:{'Scrap Metal':6,'Polymer':3,'Electronics':1}, out:{kind:'armor',name:'Korund-VM'}},
+  {id:'r_slick', mod:'workbench', lvl:3, name:'Slick Plate', time:160, money:140000, mats:{'Scrap Metal':10,'Electronics':3,'Polymer':4}, out:{kind:'armor',name:'Slick Plate'}},
+  {id:'r_tri', mod:'workbench', lvl:2, name:'Tri-Zip Backpack', time:80, money:40000, mats:{'Polymer':5,'Scrap Metal':2}, out:{kind:'backpack',name:'Tri-Zip'}},
+  // Med Station
+  {id:'r_band', mod:'medstation', lvl:1, name:'Bandage ×5', time:25, money:1500, mats:{'Medical Supplies':1}, out:{kind:'med',name:'Bandage',count:5}},
+  {id:'r_salewa', mod:'medstation', lvl:1, name:'Salewa ×2', time:40, money:5000, mats:{'Medical Supplies':1}, out:{kind:'med',name:'Salewa',count:2}},
+  {id:'r_ifak', mod:'medstation', lvl:2, name:'IFAK ×2', time:70, money:12000, mats:{'Medical Supplies':2,'Polymer':1}, out:{kind:'med',name:'IFAK',count:2}},
+  {id:'r_grizzly', mod:'medstation', lvl:3, name:'Grizzly ×1', time:120, money:24000, mats:{'Medical Supplies':4,'Electronics':1}, out:{kind:'med',name:'Grizzly',count:1}},
+  // Intel Center
+  {id:'r_intel', mod:'intel', lvl:1, name:'Intel Folder', time:60, money:20000, mats:{'Electronics':2}, out:{kind:'loot',name:'Intel Folder',value:70000,tier:'epic'}},
+  {id:'r_keycard', mod:'intel', lvl:3, name:'Labs Access Keycard', time:240, money:300000, mats:{'Electronics':8,'Fuel':4}, out:{kind:'key',name:'Labs Access Keycard'}},
+];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const G = {
+  money: 9000,
+  keys: 0,
+  stash: [],
+  arsenal: {weapons:[], armors:[], helmets:[], backpacks:[], rigs:[]},
+  ammoStock: {'9x18 PM gzh':64},
+  medStock: {'Bandage':3, 'Salewa':1},
+  gunLevels: {},                // weaponName -> kill count (drives level 1-6)
+  gear: {
+    weapons: [ {...WPN_BY_NAME['Makarov PM']}, null ],   // [primary, secondary]
+    ammos:   ['9x18 PM gzh', ''],
+    active: 0,
+    armor: {...ARMORS[0]},
+    helmet: {...HELMETS[0]},
+    backpack: {...BACKPACKS[0]},
+    rig: {...RIGS[0]},
+  },
+  raiders: [],
+  mail: [],                            // inbox messages
+  materials: {},                       // material name -> count
+  base: { modules:{barracks:1, generator:0, workbench:0, medstation:0, intel:0, bitcoin:0}, builds:[], crafts:[], btc:0, btcLast:0 },
+  stats: {extracts:0, deaths:0, kills:0},
+  prestige: {tokens:0, wipes:0, up:{}},   // permanent meta-progression (survives wipes)
+  auto: {scav:0, reload:0, loot:0, extract:0}, autoExtractRisk:40,   // automation upgrade levels
+  lastScav: 0, muted:false,
+  traders: {},   // id -> {exp, spent, idx, base}
+  progress: {kills:0, extracts:0, keysFound:0, bestDepth:0, killsAt:{}, extractsAt:{}},
+  raid: null,
+};
+function defaultProgress(){ return {kills:0,extracts:0,keysFound:0,bestDepth:0,killsAt:{},extractsAt:{}}; }
+function initTraders(){
+  for(const tr of TRADERS){
+    const t=G.traders[tr.id]=G.traders[tr.id]||{exp:0,spent:0,idx:0,base:null};
+    if(t.base==null) t.base=snapProgress(tr.id);
+  }
+}
+let lastTick = Date.now();
+let raiderId = 0;
+let craftUid = 0;
+let mailUid = 0;
+
+/* ============================================================
+   PERSISTENCE
+   ============================================================ */
+function save(){ try{ localStorage.setItem('extract_save', JSON.stringify({
+  v:2, money:G.money, keys:G.keys, stash:G.stash, arsenal:G.arsenal, ammoStock:G.ammoStock, medStock:G.medStock,
+  gunLevels:G.gunLevels, gear:G.gear, raiders:G.raiders, mail:G.mail, materials:G.materials, base:G.base, stats:G.stats, prestige:G.prestige,
+  auto:G.auto, autoExtractRisk:G.autoExtractRisk, lastScav:G.lastScav, muted:G.muted, traders:G.traders, progress:G.progress, raiderId, craftUid, mailUid
+}));}catch(e){} }
+function load(){
+  try{
+    const s=JSON.parse(localStorage.getItem('extract_save'));
+    if(!s || s.v!==2) return; // reset old saves to new gear model
+    Object.assign(G,{money:s.money,keys:s.keys||0,stash:s.stash||[],
+      arsenal:Object.assign({weapons:[],armors:[],helmets:[],backpacks:[],rigs:[]},s.arsenal),
+      ammoStock:s.ammoStock||{}, medStock:s.medStock||{}, gunLevels:s.gunLevels||{}, gear:s.gear, raiders:s.raiders||[],
+      stats:s.stats||{extracts:0,deaths:0,kills:0},
+      materials:s.materials||{},
+      base:s.base||{ modules:{barracks:1,generator:0,workbench:0,medstation:0,intel:0}, builds:[], crafts:[] },
+      traders:s.traders||{}, progress:Object.assign(defaultProgress(),s.progress)});
+    if(!G.base.modules) G.base.modules={barracks:1,generator:0,workbench:0,medstation:0,intel:0,bitcoin:0};
+    if(G.base.modules.bitcoin==null) G.base.modules.bitcoin=0;
+    if(!G.base.builds) G.base.builds=[];
+    if(!G.base.crafts) G.base.crafts=[];
+    if(G.base.btc==null) G.base.btc=0;
+    if(!G.base.btcLast) G.base.btcLast=Date.now();   // keep offline accrual (bounded by the cap)
+    G.mail=s.mail||[];
+    G.prestige=Object.assign({tokens:0,wipes:0,up:{}}, s.prestige);
+    G.auto=Object.assign({scav:0,reload:0,loot:0,extract:0}, s.auto);
+    G.autoExtractRisk=s.autoExtractRisk||40; G.lastScav=s.lastScav||0; G.muted=!!s.muted;
+    craftUid=s.craftUid||0; mailUid=s.mailUid||0;
+    if(!G.gear.backpack) G.gear.backpack={...BACKPACKS[0]};  // backfill for older v2 saves
+    if(!G.gear.rig) G.gear.rig={...RIGS[0]};
+    if(!G.arsenal.rigs) G.arsenal.rigs=[];
+    // migrate older backpacks that used `slots` to the points model
+    if(G.gear.backpack && G.gear.backpack.pts==null) G.gear.backpack=BACKPACK_BY_NAME[G.gear.backpack.name]||{...BACKPACKS[0]};
+    // migrate single-weapon saves to dual-slot model
+    if(G.gear.weapon && !G.gear.weapons){
+      G.gear.weapons=[G.gear.weapon, null]; G.gear.ammos=[G.gear.ammo||'', '']; G.gear.active=0;
+      delete G.gear.weapon; delete G.gear.ammo;
+    }
+    if(!G.gear.weapons) G.gear.weapons=[{...WPN_BY_NAME['Makarov PM']},null];
+    if(!G.gear.ammos) G.gear.ammos=[G.gear.weapons[0]?'':'',''];
+    if(G.gear.active==null) G.gear.active=0;
+    raiderId=s.raiderId||0;
+  }catch(e){}
+}
+
+/* ============================================================
+   GEAR / AMMO HELPERS
+   ============================================================ */
+// active weapon slot (0=primary, 1=secondary), with level bonuses applied
+function activeWeapon(){ return G.gear.weapons[G.gear.active]; }
+function activeEff(){ return effWeapon(activeWeapon()); }
+function hasSecondary(){ return !!G.gear.weapons[1]; }
+function currentAmmo(){
+  const w=activeWeapon(); if(!w) return null;
+  const a=AMMO_BY_NAME[G.gear.ammos[G.gear.active]];
+  if(!a || a.cal!==w.cal) return null;
+  return a;
+}
+function ammoCount(name){ return G.ammoStock[name]||0; }
+function medCount(name){ return G.medStock[name]||0; }
+// total carry capacity in points = backpack + tactical rig + pockets
+function carryCapacity(){
+  return (G.gear.backpack?G.gear.backpack.pts:0) + (G.gear.rig?G.gear.rig.pts:0) + POCKET_POINTS + carryBonus();
+}
+function carriedPoints(){ return G.raid? G.raid.carried.reduce((a,it)=>a+itemPoints(it),0) : 0; }
+function ownedMeds(){ return MEDS.filter(m=>medCount(m.name)>0); }
+function useMed(name){
+  const m=MED_BY_NAME[name]; if(!m||medCount(name)<=0||!G.raid)return;
+  if(G.raid.hp>=G.raid.maxHp && G.raid.bleed<=0) return toast('Already at full health','var(--warn)');
+  G.medStock[name]--;
+  G.raid.hp=Math.min(G.raid.maxHp, G.raid.hp+m.heal);
+  if(m.cure>0) G.raid.bleed=Math.max(0, G.raid.bleed-m.cure);
+  pushLog(`Used <b>${name}</b>${m.heal?` (+${m.heal} HP)`:''}${m.cure?' — bleeding treated':''}.`);
+  toast(`Used ${name}`,'var(--good)');
+  if(G.raid.combat) renderCombat(); else render();
+}
+function ownedAmmoForCaliber(cal){
+  return (AMMO_BY_CAL[cal]||[]).filter(a=>ammoCount(a.name)>0);
+}
+function pickCompatibleAmmo(slot){
+  slot = (slot==null)? G.gear.active : slot;
+  const w=G.gear.weapons[slot]; if(!w){ G.gear.ammos[slot]=''; return; }
+  const cur=AMMO_BY_NAME[G.gear.ammos[slot]];
+  if(cur && cur.cal===w.cal && ammoCount(cur.name)>0) return;
+  const owned=ownedAmmoForCaliber(w.cal);
+  G.gear.ammos[slot] = owned.length? owned[0].name : '';
+}
+/* ---------- magazines (per weapon slot, loaded from your ammo reserve) ---------- */
+function magCap(slot){ const w=G.gear.weapons[slot]; return w? effWeapon(w).mag : 0; }
+function reloadSlot(s){
+  const w=G.gear.weapons[s]; if(!w || !G.raid){ if(G.raid)G.raid.mag[s]=0; return 0; }
+  const a=AMMO_BY_NAME[G.gear.ammos[s]];
+  if(!a || a.cal!==w.cal){ G.raid.mag[s]=0; G.raid.magAmmo[s]=''; return 0; }
+  const cap=effWeapon(w).mag, need=cap-G.raid.mag[s], avail=ammoCount(a.name);
+  const load=Math.max(0, Math.min(need, avail));
+  G.ammoStock[a.name]=avail-load; G.raid.mag[s]+=load; G.raid.magAmmo[s]=a.name;
+  return load;
+}
+function loadAllMags(){ G.raid.mag=[0,0]; G.raid.magAmmo=['','']; reloadSlot(0); if(G.gear.weapons[1]) reloadSlot(1); }
+// the ammo actually chambered in the active mag (for damage/pen)
+function magAmmo(){ return AMMO_BY_NAME[G.raid? G.raid.magAmmo[G.gear.active] : '']||null; }
+function reloadActive(){
+  if(!G.raid||!G.raid.combat) return;
+  const s=G.gear.active, before=G.raid.mag[s];
+  const got=reloadSlot(s);
+  if(got>0){ pushLog(`Reloaded — ${G.raid.mag[s]} rounds.`); }
+  else if(G.raid.mag[s]===before){ toast('No reserve ammo for this gun','var(--danger)'); }
+  renderCombat();
+}
+function switchWeapon(){
+  if(!hasSecondary()||!G.raid) return;
+  G.gear.active = G.gear.active===0?1:0;
+  pushLog(`Switched to <b>${activeWeapon().name}</b>.`);
+  if(G.raid.combat){ spawnTargets(); renderCombat(); } else render();
+}
+// Penetration: how much of a shot gets through armor of class `cls`.
+function penFactor(pen, cls){
+  if(!cls || cls<=0) return 1;
+  const need = cls*9;                 // class6 wall ≈ 54 pen
+  if(pen>=need) return 1;
+  return clamp(Math.pow(pen/need, 1.7), 0.05, 1);
+}
+
+/* ============================================================
+   SURVIVABILITY (whole loadout: armor + helmet + weapon + ammo)
+   ============================================================ */
+function loadoutMitigation(o={}){
+  const weapon=o.weapon||activeEff()||{dmgMod:0.5};
+  const armor =o.armor ||G.gear.armor;
+  const helmet=o.helmet||G.gear.helmet;
+  const ammo  =('ammo' in o)? o.ammo : currentAmmo();
+  const armorMit  = 1 - clamp(armor.cls*0.10, 0, 0.60);
+  const helmMit   = 1 - clamp(helmet.cls*0.05, 0, 0.30);
+  const off = ammo ? (ammo.dmg*weapon.dmgMod*0.35 + ammo.pen*0.9) : 3;
+  const offMit    = 1 - clamp(off/170, 0, 0.40);
+  return clamp(armorMit*helmMit*offMit, 0.15, 1);
+}
+function survivalRating(o){ return Math.round((1-loadoutMitigation(o))*100); }
+function survColor(r){ return r>=55?'var(--good)':r>=30?'var(--warn)':'var(--danger)'; }
+
+/* ============================================================
+   LOOT
+   ============================================================ */
+function rollTier(bias){
+  const total=Object.values(bias).reduce((a,b)=>a+b,0);
+  let r=Math.random()*total;
+  for(const t of Object.keys(bias)){ r-=bias[t]; if(r<=0) return t; }
+  return 'common';
+}
+function rollLoot(bias, depthBonus=0){
+  const it=rollLootBase(bias, depthBonus);
+  if(it && it.value) it.value=Math.round(it.value*lootMult());   // prestige Loot Find
+  return it;
+}
+function rollLootBase(bias, depthBonus=0){
+  const b={...bias};
+  b.rare+=depthBonus*8; b.epic+=depthBonus*4; b.legendary+=depthBonus*1.5;
+  const tier=rollTier(b);
+  // rare keycard (only legendary-capable maps roll legendary)
+  if(tier==='legendary' && Math.random()<0.07)
+    return {kind:'key',name:'Labs Access Keycard',value:900000,tier:'legendary'};
+  // meds drop sometimes on any tier
+  if(Math.random()<0.10){
+    const m=gearByLevel(MEDS, tier==='junk'?0.1:tier==='common'?0.35:0.7);
+    return {kind:'med',name:m.name,count:1,value:m.val,tier:tier==='junk'?'common':tier};
+  }
+  // crafting materials drop (feed the base)
+  if(Math.random()<0.16){
+    const name=pick(MATERIALS), cnt=ri(1,3);
+    return {kind:'material',name,count:cnt,value:Math.round((MATERIAL_PRICE[name]||3000)*0.5)*cnt,tier:tier==='junk'?'junk':'common'};
+  }
+  // gear / ammo drops on good tiers
+  if((tier==='rare'||tier==='epic'||tier==='legendary') && Math.random()<0.30){
+    const roll=Math.random();
+    const lvl = tier==='rare'?0.45 : tier==='epic'?0.72 : 0.95;  // gear quality 0-1
+    if(roll<0.30){ const w=gearByLevel(WEAPONS,lvl); return {kind:'weapon',name:w.name,value:w.val,tier,data:{...w}}; }
+    if(roll<0.54){ const a=gearByLevel(ARMORS,lvl);  return {kind:'armor', name:a.name,value:a.val,tier,data:{...a}}; }
+    if(roll<0.72){ const h=gearByLevel(HELMETS.slice(1),lvl); return {kind:'helmet',name:h.name,value:h.val,tier,data:{...h}}; }
+    if(roll<0.78){ const p=gearByLevel(BACKPACKS,lvl); return {kind:'backpack',name:p.name,value:p.val,tier,data:{...p}}; }
+    if(roll<0.84){ const rg=gearByLevel(RIGS,lvl); return {kind:'rig',name:rg.name,value:rg.val,tier,data:{...rg}}; }
+    // ammo stack
+    const am=gearByLevel(AMMO,lvl); const cnt=ri(20,50);
+    return {kind:'ammo',name:am.name,count:cnt,value:am.val*cnt,tier};
+  }
+  const [name,base]=pick(LOOT[tier]);
+  return {kind:'loot',name,value:Math.round(base*rnd(0.8,1.25)),tier};
+}
+// pick an item near a quality level (0=cheapest .. 1=best) from a value-sorted list
+function gearByLevel(list,lvl){
+  const sorted=[...list].sort((a,b)=>a.val-b.val);
+  const idx=clamp(Math.round(lvl*(sorted.length-1))+ri(-1,1),0,sorted.length-1);
+  return sorted[idx];
+}
+function routeLoot(it){
+  if(it.kind==='weapon') G.arsenal.weapons.push(it);
+  else if(it.kind==='armor') G.arsenal.armors.push(it);
+  else if(it.kind==='helmet') G.arsenal.helmets.push(it);
+  else if(it.kind==='backpack') G.arsenal.backpacks.push(it);
+  else if(it.kind==='rig') G.arsenal.rigs.push(it);
+  else if(it.kind==='ammo') G.ammoStock[it.name]=ammoCount(it.name)+it.count;
+  else if(it.kind==='med') G.medStock[it.name]=medCount(it.name)+(it.count||1);
+  else if(it.kind==='material') G.materials[it.name]=matCount(it.name)+(it.count||1);
+  else if(it.kind==='key'){ G.keys++; G.progress.keysFound++; }
+  else G.stash.push(it);
+}
+
+/* ============================================================
+   BASE / HIDEOUT logic
+   ============================================================ */
+function matCount(name){ return G.materials[name]||0; }
+function moduleLevel(id){ return G.base.modules[id]||0; }
+function maxRaiders(){ return moduleLevel('barracks')*2; }
+function intelLevel(){ return moduleLevel('intel'); }
+function hasMats(mats){ return Object.entries(mats||{}).every(([m,n])=>matCount(m)>=n); }
+function spendMats(mats){ for(const [m,n] of Object.entries(mats||{})) G.materials[m]=matCount(m)-n; }
+function matsText(mats){ return Object.entries(mats||{}).map(([m,n])=>`<span style="${matCount(m)>=n?'':'color:var(--danger)'}">${n} ${m}</span>`).join(', ')||'—'; }
+function buyMaterial(name){
+  const c=Math.round(MATERIAL_PRICE[name]*priceMult()); if(G.money<c) return toast('Not enough roubles','var(--danger)');
+  G.money-=c; G.materials[name]=matCount(name)+1; toast('Bought '+name,'var(--gold)'); openBase();
+}
+// build / upgrade a module to its next level
+function buildReq(id){ const m=MODULE_BY_ID[id]; const lvl=moduleLevel(id); return m.tiers[lvl]; }   // null if maxed
+function isBuilding(id){ return G.base.builds.some(b=>b.id===id); }
+function reqMet(t){ return !t.req || Object.entries(t.req).every(([k,v])=>moduleLevel(k)>=v); }
+function startBuild(id){
+  const lvl=moduleLevel(id), m=MODULE_BY_ID[id], t=m.tiers[lvl];
+  if(!t) return toast('Already max level','var(--warn)');
+  if(isBuilding(id)) return;
+  if(!reqMet(t)) return toast('Requires '+Object.entries(t.req).map(([k,v])=>MODULE_BY_ID[k].name+' L'+v).join(', '),'var(--danger)');
+  if(G.money<t.money) return toast('Not enough roubles','var(--danger)');
+  if(!hasMats(t.mats)) return toast('Missing materials','var(--danger)');
+  G.money-=t.money; spendMats(t.mats);
+  G.base.builds.push({id, toLevel:lvl+1, finishAt:Date.now()+t.time*1000, dur:t.time});
+  toast(`${m.name} → L${lvl+1} under construction`,'var(--accent)'); openBase();
+}
+// crafting
+function recipesFor(modId){ return RECIPES.filter(r=>r.mod===modId && moduleLevel(modId)>=r.lvl); }
+function craftingIn(modId){ return G.base.crafts.find(c=>c.mod===modId); }
+const MAX_QUEUE = 5;
+function moduleJobs(mod){ return G.base.crafts.filter(c=>c.mod===mod); }
+function activeCraft(mod){ return G.base.crafts.find(c=>c.mod===mod && c.finishAt); }
+function startCraft(rid){
+  const r=RECIPES.find(x=>x.id===rid); if(!r) return;
+  if(moduleLevel(r.mod)<r.lvl) return;
+  if(moduleJobs(r.mod).length>=MAX_QUEUE) return toast('Queue full ('+MAX_QUEUE+')','var(--warn)');
+  if(G.money<r.money) return toast('Not enough roubles','var(--danger)');
+  if(!hasMats(r.mats)) return toast('Missing materials','var(--danger)');
+  G.money-=r.money; spendMats(r.mats);   // resources committed up front
+  const busy=!!activeCraft(r.mod);
+  G.base.crafts.push({uid:++craftUid, rid:r.id, mod:r.mod, dur:r.time, finishAt: busy? null : Date.now()+r.time*1000});
+  toast((busy?'Queued ':'Crafting ')+r.name,'var(--accent)'); openBase();
+}
+function cancelCraft(uid){
+  const c=G.base.crafts.find(x=>x.uid===uid); if(!c) return;
+  const r=RECIPES.find(x=>x.id===c.rid);
+  if(r){ G.money+=r.money; for(const [m,n] of Object.entries(r.mats||{})) G.materials[m]=matCount(m)+n; }   // refund
+  const wasActive=!!c.finishAt;
+  G.base.crafts=G.base.crafts.filter(x=>x!==c);
+  if(wasActive){ const next=G.base.crafts.find(x=>x.mod===c.mod && !x.finishAt); if(next) next.finishAt=Date.now()+next.dur*1000; }
+  toast('Cancelled '+(r?r.name:'craft')+' — refunded','var(--gold)'); openBase();
+}
+function claimBitcoin(){
+  const lvl=moduleLevel('bitcoin'); if(lvl<1) return;
+  const n=Math.floor(G.base.btc||0); if(n<1) return toast('No Bitcoin ready yet','var(--warn)');
+  for(let i=0;i<n;i++) G.stash.push({kind:'loot',name:'Physical Bitcoin',value:BTC_VALUE,tier:'legendary'});
+  G.base.btc=(G.base.btc||0)-n;
+  toast(`Claimed ${n} Bitcoin → stash (${fmt(n*BTC_VALUE)}₽)`,'var(--gold)'); openBase();
+}
+// turn a recipe output into a routable inventory item
+function craftItem(out){
+  const k=out.kind;
+  if(k==='ammo')   return {kind:'ammo',name:out.name,count:out.count,value:(AMMO_BY_NAME[out.name]?.val||0)*out.count,tier:'rare'};
+  if(k==='med')    return {kind:'med',name:out.name,count:out.count,value:(MED_BY_NAME[out.name]?.val||0)*out.count,tier:'common'};
+  if(k==='weapon') { const w=WPN_BY_NAME[out.name]; return {kind:'weapon',name:w.name,value:w.val,tier:'rare',data:{...w}}; }
+  if(k==='armor')  { const a=ARMOR_BY_NAME[out.name]; return {kind:'armor',name:a.name,value:a.val,tier:'rare',data:{...a}}; }
+  if(k==='helmet') { const h=HELMET_BY_NAME[out.name]; return {kind:'helmet',name:h.name,value:h.val,tier:'rare',data:{...h}}; }
+  if(k==='backpack'){ const b=BACKPACK_BY_NAME[out.name]; return {kind:'backpack',name:b.name,value:b.val,tier:'rare',data:{...b}}; }
+  if(k==='rig')    { const rg=RIG_BY_NAME[out.name]; return {kind:'rig',name:rg.name,value:rg.val,tier:'rare',data:{...rg}}; }
+  if(k==='key')    return {kind:'key',name:out.name,value:900000,tier:'legendary'};
+  return {kind:'loot',name:out.name,value:out.value||1000,tier:out.tier||'common'};
+}
+// process finished builds & crafts + Bitcoin accrual (called from tick)
+function processBase(now){
+  let changed=false;
+  for(const b of [...G.base.builds]){ if(now>=b.finishAt){ G.base.modules[b.id]=b.toLevel; G.base.builds=G.base.builds.filter(x=>x!==b);
+    toast(`${MODULE_BY_ID[b.id].name} reached L${b.toLevel}`,'var(--good)');
+    addMail('Hideout', `${MODULE_BY_ID[b.id].name} ${b.toLevel===1?'built':'upgraded'}`, `Construction complete — <b>${MODULE_BY_ID[b.id].name}</b> is now <b>Level ${b.toLevel}</b>.`, MODULE_BY_ID[b.id].icon);
+    changed=true; } }
+  for(const c of [...G.base.crafts]){ if(c.finishAt && now>=c.finishAt){ const r=RECIPES.find(x=>x.id===c.rid);
+    if(r){ const it=craftItem(r.out); routeLoot(it); if(it.kind==='key')G.progress.keysFound++; toast(`Crafted ${r.name}`,'var(--good)');
+      addMail('Workshop', `Craft ready: ${r.name}`, `Your <b>${r.name}</b> finished at the ${MODULE_BY_ID[c.mod].name} and was added to your stash.`, '🔨'); }
+    G.base.crafts=G.base.crafts.filter(x=>x!==c);
+    const next=G.base.crafts.find(x=>x.mod===c.mod && !x.finishAt); if(next) next.finishAt=now+next.dur*1000;   // start next in queue
+    changed=true; } }
+  // Bitcoin Farm passive accrual (continuous — does not force re-render)
+  const bl=moduleLevel('bitcoin');
+  if(bl>0){ const last=G.base.btcLast||now; const dt=Math.max(0,(now-last)/1000); G.base.btcLast=now;
+    const wasReady=Math.floor(G.base.btc||0);
+    G.base.btc=Math.min(btcCap(bl), (G.base.btc||0)+btcRate(bl)*dt);
+    if(Math.floor(G.base.btc)>wasReady) changed=true;   // a whole BTC became claimable → refresh
+  } else G.base.btcLast=now;
+  return changed;
+}
+
+/* ============================================================
+   TRADER LEVELS + MISSIONS
+   ============================================================ */
+function snapProgress(id){
+  return {kills:G.progress.kills, extracts:G.progress.extracts, keysFound:G.progress.keysFound,
+    killsAt:{...G.progress.killsAt}, extractsAt:{...G.progress.extractsAt},
+    spentAt:(G.traders[id]?G.traders[id].spent:0)};
+}
+function traderLevel(t){ let lvl=1; for(const r of LEVEL_REQ){ if(t.exp>=r.exp && t.spent>=r.spent) lvl=r.lvl; else break; } return lvl; }
+function nextReq(t){ return LEVEL_REQ.find(r=>!(t.exp>=r.exp && t.spent>=r.spent)) || null; }
+function currentMission(tr){ return tr.missions[G.traders[tr.id].idx]; }
+function missionProgress(id,m){
+  const t=G.traders[id], b=t.base||{};
+  switch(m.type){
+    case 'kills':      return G.progress.kills-(b.kills||0);
+    case 'extracts':   return G.progress.extracts-(b.extracts||0);
+    case 'killsAt':    return (G.progress.killsAt[m.loc]||0)-((b.killsAt&&b.killsAt[m.loc])||0);
+    case 'extractsAt': return (G.progress.extractsAt[m.loc]||0)-((b.extractsAt&&b.extractsAt[m.loc])||0);
+    case 'keys':       return G.progress.keysFound-(b.keysFound||0);
+    case 'spend':      return Math.max(0,Math.round(t.spent-(b.spentAt||0)));
+    case 'depth':      return G.progress.bestDepth>=m.target? m.target : Math.round(G.progress.bestDepth);
+  }
+  return 0;
+}
+function missionReady(id){
+  const tr=TRADER_BY_ID[id], t=G.traders[id], m=tr.missions[t.idx];
+  if(!m) return false;
+  if(traderLevel(t) < (m.reqLevel||1)) return false;
+  return missionProgress(id,m) >= m.target;
+}
+function anyMissionReady(){ return TRADERS.some(tr=>missionReady(tr.id)); }
+function claimMission(id){
+  if(!missionReady(id)) return;
+  const tr=TRADER_BY_ID[id], t=G.traders[id], m=tr.missions[t.idx];
+  const before=traderLevel(t);
+  t.exp+=m.exp; G.money+=m.cash; t.idx++; t.base=snapProgress(id);
+  toast(`Mission complete: +${m.exp} rep, +${fmt(m.cash)}₽`,'var(--good)');
+  addMail(tr.name, `Task complete: ${m.name}`, `Good work. Reward: <b style="color:var(--gold)">+${fmt(m.cash)}₽</b> and +${m.exp} reputation.`, '✅');
+  if(traderLevel(t)>before) addMail(tr.name, `Loyalty Level ${traderLevel(t)}`, `You've reached <b>LL${traderLevel(t)}</b> with me — new wares are unlocked.`, '⭐');
+  openTraderPanel(id);
+}
+function traderBuy(id,cat,idx){
+  const tr=TRADER_BY_ID[id], t=G.traders[id], lvl=traderLevel(t);
+  const entry=tr.stock[cat][idx]; if(!entry || lvl<entry.ll) return;
+  const w=resolveWare(cat,entry.n);
+  const cost = Math.round((cat==='ammo'? w.val*30 : w.val)*priceMult());
+  if(G.money<cost) return toast('Not enough roubles','var(--danger)');
+  G.money-=cost; t.spent+=cost;
+  if(cat==='weapons') G.arsenal.weapons.push({kind:'weapon',name:w.name,value:w.val,tier:'rare',data:{...w}});
+  else if(cat==='armors') G.arsenal.armors.push({kind:'armor',name:w.name,value:w.val,tier:'rare',data:{...w}});
+  else if(cat==='helmets') G.arsenal.helmets.push({kind:'helmet',name:w.name,value:w.val,tier:'rare',data:{...w}});
+  else if(cat==='backpacks') G.arsenal.backpacks.push({kind:'backpack',name:w.name,value:w.val,tier:'rare',data:{...w}});
+  else if(cat==='rigs') G.arsenal.rigs.push({kind:'rig',name:w.name,value:w.val,tier:'rare',data:{...w}});
+  else if(cat==='meds') G.medStock[w.name]=medCount(w.name)+1;
+  else G.ammoStock[w.name]=ammoCount(w.name)+30;
+  toast('Bought '+(cat==='ammo'?'30× ':'')+w.name,'var(--gold)');
+  if(traderLevel(t)>lvl) addMail(tr.name, `Loyalty Level ${traderLevel(t)}`, `Your spending earned you <b>LL${traderLevel(t)}</b> with me — new wares unlocked.`, '⭐');
+  openTraderPanel(id);
+}
+
+/* ============================================================
+   RENDER ROOT
+   ============================================================ */
+function render(){
+  $('money').textContent=fmt(G.money);
+  $('keycount').textContent=G.keys;
+  updateMailBadge();
+  if(G.raid){ $('screen-hub').classList.add('hidden'); $('screen-raid').classList.remove('hidden'); renderRaid(); }
+  else { $('screen-raid').classList.add('hidden'); $('screen-hub').classList.remove('hidden'); renderHub(); }
+  save();
+}
+
+function itemRow(i){
+  const c=TIERS[i.tier]?.color||'var(--text)';
+  const icon = i.kind==='weapon'?' ⚔':i.kind==='armor'?' 🦺':i.kind==='helmet'?' 🪖':i.kind==='backpack'?' 🎒':i.kind==='rig'?' 🎽':i.kind==='ammo'?' 🔸':i.kind==='med'?' 💊':i.kind==='material'?' 🔧':i.kind==='key'?' 🔑':'';
+  const label = (i.kind==='ammo'||i.kind==='med'||i.kind==='material')&&i.count>1?`${i.name} ×${i.count}`:i.name;
+  return `<div class="item"><span style="color:${c}">${label}${icon}</span><span class="v">${fmt(i.value)} ₽</span></div>`;
+}
+
+function renderHub(){
+  const stashVal=G.stash.reduce((a,i)=>a+i.value,0);
+  const sr=survivalRating();
+  const am=currentAmmo();
+  $('screen-hub').innerHTML=`
+  <div class="grid cols-2">
+    <div class="panel">
+      <h2>Loadout <span class="muted">equipped</span></h2>
+      <div class="spread"><div><span class="muted">PRIMARY${G.gear.active===0?' ◂':''}</span><br><b>${G.gear.weapons[0].name}</b> <span style="color:var(--gold);font-size:11px">L${gunLevel(G.gear.weapons[0].name)}</span></div>
+        <div class="muted" style="text-align:right">${G.gear.weapons[0].cal}</div></div>
+      <div class="spread" style="margin-top:6px"><div><span class="muted">SECONDARY${G.gear.active===1?' ◂':''}</span><br><b>${G.gear.weapons[1]?G.gear.weapons[1].name:'—'}</b>${G.gear.weapons[1]?` <span style="color:var(--gold);font-size:11px">L${gunLevel(G.gear.weapons[1].name)}</span>`:''}</div>
+        <div class="muted" style="text-align:right">${G.gear.weapons[1]?G.gear.weapons[1].cal:''}</div></div>
+      <div class="spread" style="margin-top:6px"><div><span class="muted">AMMO (in hand)</span><br><b style="color:${am?'var(--text)':'var(--danger)'}">${am?am.name:'NONE LOADED'}</b></div>
+        <div class="muted" style="text-align:right">${am?`${am.dmg}d / ${am.pen}pen`:'—'}<br>×${am?ammoCount(am.name):0}</div></div>
+      <div class="spread" style="margin-top:6px"><div><span class="muted">ARMOR</span><br><b>${G.gear.armor.name}</b></div>
+        <div class="muted" style="text-align:right">class ${G.gear.armor.cls}</div></div>
+      <div class="spread" style="margin-top:6px"><div><span class="muted">HELMET</span><br><b>${G.gear.helmet.name}</b></div>
+        <div class="muted" style="text-align:right">class ${G.gear.helmet.cls}</div></div>
+      <div class="spread" style="margin-top:6px"><div><span class="muted">BACKPACK</span><br><b>${G.gear.backpack.name}</b></div>
+        <div class="muted" style="text-align:right">${G.gear.backpack.pts} pts</div></div>
+      <div class="spread" style="margin-top:6px"><div><span class="muted">RIG</span><br><b>${G.gear.rig?G.gear.rig.name:'—'}</b></div>
+        <div class="muted" style="text-align:right">${G.gear.rig?G.gear.rig.pts:0} pts</div></div>
+      <div class="spread" style="margin-top:6px"><div><span class="muted">CARRY TOTAL</span><br><b style="color:var(--gold)">${carryCapacity()} pts</b></div>
+        <div class="muted" style="text-align:right">+${POCKET_POINTS} pockets</div></div>
+      <div class="spread" style="margin-top:6px"><div><span class="muted">MEDS</span><br><b style="color:${ownedMeds().length?'var(--text)':'var(--danger)'}">${ownedMeds().length? ownedMeds().reduce((a,m)=>a+medCount(m.name),0)+' in pouch':'NONE'}</b></div>
+        <div class="muted" style="text-align:right">${ownedMeds().length?ownedMeds().length+' types':'buy @ Therapist'}</div></div>
+      <div class="spread" style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px">
+        <span class="muted">SURVIVABILITY</span><span style="color:${survColor(sr)}">${sr}%</span></div>
+      <div class="bar"><span style="width:${sr}%;background:${survColor(sr)}"></span></div>
+      <div style="margin-top:10px" class="row">
+        <button class="primary" onclick="openLoadout()">Loadout</button>
+        <button onclick="autoAmmo()">⚡ Auto-ammo</button>
+        <button onclick="openBase()">🏗 Hideout</button>
+        <button onclick="openTrader()" ${anyMissionReady()?'style="border-color:var(--good);color:var(--good)"':''}>Traders${anyMissionReady()?' ●':''}</button>
+        <button onclick="openArsenal()">Arsenal</button>
+        <button onclick="openAuto()">⚙ Automation</button>
+        <button onclick="openPrestige()" style="border-color:var(--gold);color:var(--gold)">⬡ Prestige${G.prestige.tokens?' ('+G.prestige.tokens+')':''}</button>
+        <button onclick="sellTrash()">Sell junk</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Stash <span class="muted">${G.stash.length} items · ${fmt(stashVal)} ₽</span></h2>
+      <div class="feed">${G.stash.length? G.stash.slice(-40).reverse().map(itemRow).join('') : '<div class="muted">Empty. Go raid.</div>'}</div>
+      <button class="wide" style="margin-top:8px" onclick="sellAll()" ${G.stash.length?'':'disabled'}>Sell all stash → ${fmt(stashVal)} ₽</button>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:12px">
+    <h2>Deploy to Raid</h2>
+    ${(()=>{ const cd=scavCDLeft(); return `<div class="loc" style="border-color:var(--warn)" onclick="${cd>0?`toast('Scav recovering — ${Math.ceil(cd)}s','var(--danger)')`:'startScavRun()'}">
+      <div class="spread"><div class="name" style="color:var(--warn)">☣ SCAV RUN <span class="tag" style="border-color:var(--warn);color:var(--warn)">FREE</span></div>
+        <div class="muted" style="font-size:11px">${cd>0?'cooldown '+Math.ceil(cd)+'s':'ready'}</div></div>
+      <div class="muted" style="font-size:12px">Spawn with random low kit — no risk to your own gear. The longer you survive, the better the loot gets.</div></div>`; })()}
+    ${LOCATIONS.map(l=>{
+      const locked = l.gated && G.keys<1;
+      return `<div class="loc" onclick="${locked?`toast('Find a Labs Access Keycard in a raid first','var(--danger)')`:`startRaid('${l.id}')`}" ${locked?'style="opacity:.65"':''}>
+        <div class="spread"><div class="name">${l.name} ${l.gated?`<span class="tag" style="color:var(--gold);border-color:var(--gold)">🔑 ${G.keys}</span>`:''}</div><div>${riskPips(l.risk)}</div></div>
+        <div class="muted" style="font-size:12px">${l.desc}</div>
+        ${locked? '<div style="color:var(--danger);font-size:11px;margin-top:3px">LOCKED — consumes 1 keycard per entry</div>'
+          : `<div class="muted" style="font-size:11px;margin-top:4px">loot ▸ ${tierPreview(l.lootBias)} · combat ${Math.round(l.combat*100)}%</div>`}
+      </div>`;}).join('')}
+  </div>
+
+  <div class="panel" style="margin-top:12px">
+    <h2>🏗 Hideout <span class="muted">${G.raiders.filter(r=>r.status==='raiding').length}/${G.raiders.length} raiders out · ${G.base.builds.length+G.base.crafts.length} jobs running</span></h2>
+    <div class="row" style="gap:6px;margin-bottom:8px">
+      ${MODULES.map(m=>`<span class="tag" style="border-color:${moduleLevel(m.id)?'var(--accent)':'var(--line)'};color:${moduleLevel(m.id)?'var(--accent)':'var(--dim)'}">${m.icon} ${m.name} L${moduleLevel(m.id)}</span>`).join('')}
+    </div>
+    <div class="muted" style="font-size:12px;margin-bottom:8px">Build & upgrade modules, craft gear/ammo/meds, and manage your raider crew.</div>
+    <button class="wide primary" onclick="openBase()">Manage Hideout</button>
+  </div>
+
+  <div class="panel" style="margin-top:12px">
+    <div class="row" style="justify-content:space-around">
+      <div class="stat"><span class="big" style="color:var(--good)">${G.stats.extracts}</span><span class="lab">EXTRACTS</span></div>
+      <div class="stat"><span class="big" style="color:var(--danger)">${G.stats.deaths}</span><span class="lab">DEATHS</span></div>
+      <div class="stat"><span class="big" style="color:var(--accent)">${G.stats.kills}</span><span class="lab">KILLS</span></div>
+    </div>
+    <button class="wide danger" style="margin-top:10px" onclick="if(confirm('Wipe all progress?')){localStorage.removeItem('extract_save');location.reload();}">Wipe save</button>
+  </div>`;
+}
+function riskPips(risk){
+  const n=Math.round(risk*1.8); let h='';
+  for(let i=0;i<6;i++) h+=`<span class="pip ${i<n?'on':''} ${i>=4?'hot':''}"></span>`;
+  return h;
+}
+function tierPreview(bias){
+  return Object.entries(bias).filter(([,v])=>v>0)
+    .map(([t,v])=>`<span style="color:${TIERS[t].color}">${t[0].toUpperCase()}${v}</span>`).join(' ');
+}
+function hireCost(){ return 25000 + G.raiders.length*40000; }
+
+/* ============================================================
+   LOADOUT SELECTOR
+   ============================================================ */
+function gunStars(lvl){ return '★'.repeat(lvl)+'☆'.repeat(6-lvl); }
+function openLoadout(){
+  const o=document.createElement('div'); o.className='overlay';
+  const sr=survivalRating();
+  const aList=[{eq:true,data:G.gear.armor,tier:'common'}, ...G.arsenal.armors.map(a=>({eq:false,data:a.data,tier:a.tier,ai:a}))];
+  const hList=[{eq:true,data:G.gear.helmet,tier:'common'}, ...G.arsenal.helmets.map(h=>({eq:false,data:h.data,tier:h.tier,ai:h}))];
+  const bpList=[{eq:true,data:G.gear.backpack,tier:'common'}, ...G.arsenal.backpacks.map(b=>({eq:false,data:b.data,tier:b.tier,ai:b}))];
+  const rgList=[...(G.gear.rig?[{eq:true,data:G.gear.rig,tier:'common'}]:[]), ...G.arsenal.rigs.map(r=>({eq:false,data:r.data,tier:r.tier,ai:r}))];
+  const medList=ownedMeds();
+
+  // ---- weapon slot panel ----
+  const slotPanel=(slot)=>{
+    const w=G.gear.weapons[slot]; const isActive=G.gear.active===slot;
+    const title=slot===0?'PRIMARY':'SECONDARY';
+    if(!w) return `<div class="loc" style="border-style:dashed"><div class="spread"><b class="muted">${title}</b>
+      <span class="muted" style="font-size:11px">empty — assign a weapon below</span></div></div>`;
+    const lvl=gunLevel(w.name), eff=effWeapon(w), nextT=gunNextThresh(w.name), k=gunKills(w.name), cost=gunUpgradeCost(w);
+    const ammoForSlot=ownedAmmoForCaliber(w.cal); const loaded=G.gear.ammos[slot];
+    return `<div class="loc" style="${isActive?'border-color:var(--accent)':''}">
+      <div class="spread"><div><b style="color:${isActive?'var(--accent)':'var(--text)'}">${title}: ${w.name}</b>
+        <div style="color:var(--gold);font-size:12px">${gunStars(lvl)} <span class="muted">L${lvl}/6</span></div></div>
+        <div style="text-align:right">
+          ${isActive?'<span class="tag" style="color:var(--accent);border-color:var(--accent)">IN HAND</span>':`<button class="sm" onclick="setActiveSlot(${slot})">Hold</button>`}
+          ${slot===1?`<button class="sm danger" onclick="unequipWeapon(1)">✕</button>`:''}
+        </div></div>
+      <div class="muted" style="font-size:11px;margin-top:3px">${w.cal} · ergo ${eff.ergo} · mag ${eff.mag} · dmg×${eff.dmgMod.toFixed(2)}</div>
+      ${nextT?`<div class="spread" style="font-size:10px;margin-top:3px"><span class="muted">mastery ${k}/${nextT} kills</span>
+        <button class="sm" onclick="trainGun('${w.name.replace(/'/g,'')}')" ${G.money>=cost?'':'disabled'}>Train L${lvl+1} — ${fmt(cost)}₽</button></div>
+        <div class="bar"><span style="width:${clamp(k/nextT*100,0,100)}%;background:var(--gold)"></span></div>`
+        :'<div style="color:var(--good);font-size:11px;margin-top:3px">MAX LEVEL</div>'}
+      <div class="muted" style="font-size:10px;margin-top:6px">AMMO (${w.cal}):</div>
+      ${ammoForSlot.length? ammoForSlot.map(a=>`<div class="item" style="${loaded===a.name?'border-left:2px solid var(--accent);padding-left:4px':''}">
+        <span style="${loaded===a.name?'color:var(--accent)':''}">${a.name} <span class="muted">${a.dmg}d ${a.pen}pen ×${ammoCount(a.name)}</span></span>
+        ${loaded===a.name?'<span class="tag" style="color:var(--accent);border-color:var(--accent)">LOADED</span>':`<button class="sm" onclick="selectAmmo('${a.name.replace(/'/g,'')}',${slot})">Load</button>`}</div>`).join('')
+        :'<div class="muted" style="font-size:11px">No ammo — buy at Trader</div>'}
+    </div>`;
+  };
+  const arsenalWeaponRow=(w,i)=>{
+    const lvl=gunLevel(w.data.name);
+    return `<div class="loc" style="cursor:default"><div class="spread">
+      <div><b style="color:${TIERS[w.tier]?.color}">${w.data.name}</b> <span style="color:var(--gold);font-size:11px">L${lvl}</span>
+        <div class="muted" style="font-size:11px">${w.data.cal} · ergo ${w.data.ergo}</div></div>
+      <div class="row"><button class="primary sm" onclick="assignWeapon(${i},0)">↦ Primary</button>
+        <button class="sm" onclick="assignWeapon(${i},1)">↦ Second</button></div></div></div>`;
+  };
+  const aCard=(it,i)=>{
+    const wb=survivalRating({armor:it.data}); const d=wb-sr;
+    return `<div class="loc" style="cursor:default;${it.eq?'border-color:var(--accent)':''}"><div class="spread">
+      <div><b style="color:${TIERS[it.tier]?.color}">${it.data.name}</b><div class="muted" style="font-size:11px">armor class ${it.data.cls}</div></div>
+      <div style="text-align:right">${it.eq?'<span class="tag" style="color:var(--accent);border-color:var(--accent)">EQUIPPED</span>'
+        :`<span class="muted" style="font-size:11px">survive ${wb}% <span style="color:${d>=0?'var(--good)':'var(--danger)'}">(${d>=0?'+':''}${d})</span></span><br>
+          <button class="primary sm" onclick="equipArmor(${i-1})">Equip</button>`}</div></div></div>`;
+  };
+  const hCard=(it,i)=>{
+    const wb=survivalRating({helmet:it.data}); const d=wb-sr;
+    return `<div class="loc" style="cursor:default;${it.eq?'border-color:var(--accent)':''}"><div class="spread">
+      <div><b style="color:${TIERS[it.tier]?.color}">${it.data.name}</b><div class="muted" style="font-size:11px">head class ${it.data.cls}</div></div>
+      <div style="text-align:right">${it.eq?'<span class="tag" style="color:var(--accent);border-color:var(--accent)">EQUIPPED</span>'
+        :`<span class="muted" style="font-size:11px">survive ${wb}% <span style="color:${d>=0?'var(--good)':'var(--danger)'}">(${d>=0?'+':''}${d})</span></span><br>
+          <button class="primary sm" onclick="equipHelmet(${i-1})">Equip</button>`}</div></div></div>`;
+  };
+  const bpCard=(it,i)=>`<div class="loc" style="cursor:default;${it.eq?'border-color:var(--accent)':''}"><div class="spread">
+      <div><b style="color:${TIERS[it.tier]?.color}">${it.data.name}</b><div class="muted" style="font-size:11px">${it.data.pts} pts</div></div>
+      <div style="text-align:right">${it.eq?'<span class="tag" style="color:var(--accent);border-color:var(--accent)">EQUIPPED</span>'
+        :`<button class="primary sm" onclick="equipBackpack(${i-1})">Equip</button>`}</div></div></div>`;
+  const rgCard=(it,i)=>`<div class="loc" style="cursor:default;${it.eq?'border-color:var(--accent)':''}"><div class="spread">
+      <div><b style="color:${TIERS[it.tier]?.color}">${it.data.name}</b><div class="muted" style="font-size:11px">${it.data.pts} pts</div></div>
+      <div style="text-align:right">${it.eq?'<span class="tag" style="color:var(--accent);border-color:var(--accent)">EQUIPPED</span>'
+        :`<button class="primary sm" onclick="equipRig(${i - (G.gear.rig?1:0)})">Equip</button>`}</div></div></div>`;
+  o.innerHTML=`<div class="panel" style="width:620px;max-width:94vw;max-height:86vh;overflow:auto">
+    <h2>Loadout <span style="color:${survColor(sr)}">survivability ${sr}%</span></h2>
+    <div class="bar" style="margin-bottom:6px"><span style="width:${sr}%;background:${survColor(sr)}"></span></div>
+    <h3 style="color:var(--accent);margin:8px 0 6px">⚔ Weapons <span class="muted" style="font-size:11px;text-transform:none">(carry two — switch in combat)</span></h3>
+    <button class="primary wide" style="margin-bottom:8px" onclick="autoAmmo()">⚡ Auto-ammo — load / buy best rounds for both guns</button>
+    ${slotPanel(0)}${slotPanel(1)}
+    ${G.arsenal.weapons.length?`<div class="muted" style="font-size:11px;margin:8px 0 4px">ARSENAL — assign to a slot:</div>${G.arsenal.weapons.map(arsenalWeaponRow).join('')}`:''}
+    <h3 style="color:var(--accent);margin:12px 0 6px">🦺 Body Armor</h3>${aList.map(aCard).join('')}
+    <h3 style="color:var(--accent);margin:12px 0 6px">🪖 Helmet</h3>${hList.map(hCard).join('')}
+    <h3 style="color:var(--accent);margin:12px 0 6px">🎒 Backpack <span class="muted" style="font-size:11px;text-transform:none">(carry capacity)</span></h3>${bpList.map(bpCard).join('')}
+    <h3 style="color:var(--accent);margin:12px 0 6px">🎽 Tactical Rig <span class="muted" style="font-size:11px;text-transform:none">(extra carry — total ${carryCapacity()} pts)</span></h3>${rgList.map(rgCard).join('')}
+    <h3 style="color:var(--accent);margin:12px 0 6px">💊 Med Pouch <span class="muted" style="font-size:11px;text-transform:none">(used in raid)</span></h3>
+    ${medList.length? medList.map(m=>`<div class="item"><span>💊 ${m.name} <span class="muted">· ${m.heal?`+${m.heal}HP`:''}${m.cure?' stops bleed':''}</span></span><span class="v">×${medCount(m.name)}</span></div>`).join('')
+      : '<div class="muted">Empty — buy meds from Therapist.</div>'}
+    <div class="row" style="margin-top:12px"><button class="wide primary" onclick="closeOv()">Done</button><button onclick="closeOv();openTrader()">Trader →</button></div>
+  </div>`;
+  $('overlay-root').innerHTML=''; $('overlay-root').appendChild(o);
+}
+function reopenLoadout(){ openLoadout(); }
+function closeOv(){ $('overlay-root').innerHTML=''; render(); }
+
+function assignWeapon(i,slot){
+  const w=G.arsenal.weapons[i]; if(!w)return;
+  G.arsenal.weapons.splice(i,1);
+  const old=G.gear.weapons[slot];
+  if(old) G.arsenal.weapons.push({kind:'weapon',name:old.name,value:old.val,tier:'common',data:old});
+  G.gear.weapons[slot]=w.data; pickCompatibleAmmo(slot);
+  toast('Equipped '+w.data.name+(slot===0?' (primary)':' (secondary)'),'var(--accent)'); save(); reopenLoadout();
+}
+function unequipWeapon(slot){
+  const old=G.gear.weapons[slot]; if(!old)return;
+  if(slot===0){
+    if(!G.gear.weapons[1]) return toast('You need at least one weapon','var(--warn)');
+    // promote secondary to primary
+    G.arsenal.weapons.push({kind:'weapon',name:old.name,value:old.val,tier:'common',data:old});
+    G.gear.weapons[0]=G.gear.weapons[1]; G.gear.weapons[1]=null;
+    G.gear.ammos[0]=G.gear.ammos[1]; G.gear.ammos[1]='';
+  } else {
+    G.arsenal.weapons.push({kind:'weapon',name:old.name,value:old.val,tier:'common',data:old});
+    G.gear.weapons[1]=null; G.gear.ammos[1]='';
+  }
+  if(G.gear.active===1 && !G.gear.weapons[1]) G.gear.active=0;
+  save(); reopenLoadout();
+}
+function setActiveSlot(slot){ if(G.gear.weapons[slot]){ G.gear.active=slot; save(); reopenLoadout(); } }
+function trainGun(name){ upgradeGun(name); save(); reopenLoadout(); }
+function equipWeapon(i){  // legacy shim → assign to primary
+  assignWeapon(i,0);
+  return;
+}
+function equipArmor(i){
+  const a=G.arsenal.armors[i]; if(!a)return;
+  G.arsenal.armors.splice(i,1);
+  G.arsenal.armors.push({kind:'armor',name:G.gear.armor.name,value:G.gear.armor.val,tier:'common',data:G.gear.armor});
+  G.gear.armor=a.data; toast('Equipped '+a.data.name,'var(--accent)'); save(); reopenLoadout();
+}
+function equipHelmet(i){
+  const h=G.arsenal.helmets[i]; if(!h)return;
+  G.arsenal.helmets.splice(i,1);
+  if(G.gear.helmet.cls>0) // don't store "No Helmet" in arsenal
+    G.arsenal.helmets.push({kind:'helmet',name:G.gear.helmet.name,value:G.gear.helmet.val,tier:'common',data:G.gear.helmet});
+  G.gear.helmet=h.data; toast('Equipped '+h.data.name,'var(--accent)'); save(); reopenLoadout();
+}
+function equipBackpack(i){
+  const b=G.arsenal.backpacks[i]; if(!b)return;
+  G.arsenal.backpacks.splice(i,1);
+  G.arsenal.backpacks.push({kind:'backpack',name:G.gear.backpack.name,value:G.gear.backpack.val,tier:'common',data:G.gear.backpack});
+  G.gear.backpack=b.data; toast('Equipped '+b.data.name,'var(--accent)'); save(); reopenLoadout();
+}
+function equipRig(i){
+  const rg=G.arsenal.rigs[i]; if(!rg)return;
+  G.arsenal.rigs.splice(i,1);
+  if(G.gear.rig) G.arsenal.rigs.push({kind:'rig',name:G.gear.rig.name,value:G.gear.rig.val,tier:'common',data:G.gear.rig});
+  G.gear.rig=rg.data; toast('Equipped '+rg.data.name,'var(--accent)'); save(); reopenLoadout();
+}
+function selectAmmo(name,slot){ slot=(slot==null)?G.gear.active:slot; if(ammoCount(name)>0){ G.gear.ammos[slot]=name; toast('Loaded '+name,'var(--accent)'); save(); reopenLoadout(); } }
+// one-click: load the best ammo you own for each gun, buying a stack of the best you can afford if low
+function autoAmmo(){
+  const STACK=60, KEEP=60;   // top up to ~60 rounds per gun
+  let bought=[], loaded=[];
+  for(let s=0;s<2;s++){
+    const w=G.gear.weapons[s]; if(!w) continue;
+    const cands=(AMMO_BY_CAL[w.cal]||[]).slice().sort((a,b)=>b.pen-a.pen);  // best penetration first
+    if(!cands.length) continue;
+    // already hold a full top-up of something good? just load the best-pen of those
+    const stocked=cands.filter(a=>ammoCount(a.name)>=KEEP);
+    if(stocked.length){ G.gear.ammos[s]=stocked[0].name; loaded.push(w.name+' → '+stocked[0].name); continue; }
+    // otherwise buy a stack of the best ammo we can afford
+    const affordable=cands.find(a=>G.money>=a.val*STACK);
+    if(affordable){
+      G.money-=affordable.val*STACK; G.ammoStock[affordable.name]=ammoCount(affordable.name)+STACK;
+      G.gear.ammos[s]=affordable.name; bought.push(`${STACK}× ${affordable.name}`);
+    } else {
+      // can't afford a full stack — buy as much of the cheapest as possible, else load whatever's owned
+      const cheap=cands.slice().sort((a,b)=>a.val-b.val)[0];
+      const qty=Math.floor(G.money/cheap.val);
+      if(qty>0){ const q=Math.min(STACK,qty); G.money-=cheap.val*q; G.ammoStock[cheap.name]=ammoCount(cheap.name)+q; G.gear.ammos[s]=cheap.name; bought.push(`${q}× ${cheap.name}`); }
+      else { const owned=cands.find(a=>ammoCount(a.name)>0); if(owned){ G.gear.ammos[s]=owned.name; loaded.push(w.name+' → '+owned.name); } }
+    }
+  }
+  if(bought.length) toast('Bought & loaded '+bought.join(', '),'var(--gold)');
+  else if(loaded.length) toast('Loaded best ammo','var(--accent)');
+  else toast('No ammo available','var(--danger)');
+  save();
+  if(document.querySelector('.overlay')) reopenLoadout(); else render();   // refresh loadout if open, else the hub
+}
+
+/* ============================================================
+   TRADERS UI
+   ============================================================ */
+function openTrader(){ openTraderHub(); }
+function openTraderHub(){
+  const o=document.createElement('div'); o.className='overlay';
+  o.innerHTML=`<div class="panel" style="width:620px;max-width:94vw;max-height:86vh;overflow:auto">
+    <h2>Traders <span class="muted">${fmt(G.money)} ₽</span></h2>
+    ${TRADERS.map(tr=>{
+      const t=G.traders[tr.id], lvl=traderLevel(t), ready=missionReady(tr.id);
+      return `<div class="loc" onclick="openTraderPanel('${tr.id}')">
+        <div class="spread"><div class="name">${tr.name}
+          ${ready?'<span class="tag blink" style="color:var(--good);border-color:var(--good)">MISSION READY</span>':''}</div>
+          <div class="muted">LL ${lvl}<span style="opacity:.5">/6</span></div></div>
+        <div class="muted" style="font-size:12px">${tr.blurb}</div></div>`;
+    }).join('')}
+    <button class="wide primary" style="margin-top:12px" onclick="closeOv()">Close</button>
+  </div>`;
+  $('overlay-root').innerHTML=''; $('overlay-root').appendChild(o);
+}
+function openTraderPanel(id){
+  const tr=TRADER_BY_ID[id], t=G.traders[id], lvl=traderLevel(t), nr=nextReq(t);
+  const o=document.createElement('div'); o.className='overlay';
+
+  // level progress
+  let lvlBlock;
+  if(nr){
+    const ep=clamp(t.exp/nr.exp*100,0,100), sp=clamp(t.spent/nr.spent*100,0,100);
+    lvlBlock=`<div class="muted" style="font-size:11px;margin-top:6px">TO LOYALTY ${nr.lvl} — both bars must fill</div>
+      <div class="spread" style="font-size:11px"><span>rep ${t.exp}/${nr.exp}</span><span>spent ${fmt(t.spent)}/${fmt(nr.spent)}₽</span></div>
+      <div class="bar" style="margin:2px 0"><span style="width:${ep}%;background:var(--accent)"></span></div>
+      <div class="bar"><span style="width:${sp}%;background:var(--gold)"></span></div>`;
+  } else lvlBlock=`<div style="color:var(--good);margin-top:6px">MAX LOYALTY — all wares unlocked</div>`;
+
+  // missions
+  const mRows=tr.missions.map((m,i)=>{
+    const t2=G.traders[id];
+    if(i<t2.idx) return `<div class="item"><span style="color:var(--good)">✓ ${m.name}</span><span class="muted">+${m.exp} rep</span></div>`;
+    if(i>t2.idx) return `<div class="item"><span class="muted">🔒 ${m.name}</span><span class="muted">locked</span></div>`;
+    // active
+    const reqOk=lvl>=(m.reqLevel||1);
+    const prog=reqOk?missionProgress(id,m):0;
+    const done=prog>=m.target;
+    const target = m.type==='spend'? `${fmt(prog)}/${fmt(m.target)}₽`
+                 : m.type==='depth'? `${prog}/${m.target}m` : `${Math.min(prog,m.target)}/${m.target}`;
+    const right = !reqOk? `<span class="tag" style="color:var(--warn);border-color:var(--warn)">Needs LL${m.reqLevel}</span>`
+      : done? `<button class="primary sm blink" onclick="claimMission('${id}')">CLAIM</button>`
+      : `<span class="muted">${target}</span>`;
+    const pct=clamp(prog/m.target*100,0,100);
+    return `<div class="loc" style="cursor:default;border-color:${done?'var(--good)':'var(--line)'}">
+      <div class="spread"><b>${m.name}</b>${right}</div>
+      <div class="muted" style="font-size:12px">${m.desc}</div>
+      <div class="muted" style="font-size:11px;margin-top:2px">reward: +${m.exp} rep · +${fmt(m.cash)}₽</div>
+      ${reqOk?`<div class="bar" style="margin-top:4px"><span style="width:${pct}%;background:${done?'var(--good)':'var(--accent)'}"></span></div>`:''}
+    </div>`;
+  }).join('');
+
+  // wares
+  const wareRow=(cat,e,i,extra)=>{
+    const w=resolveWare(cat,e.n); const locked=lvl<e.ll;
+    const cost=cat==='ammo'?w.val*30:w.val;
+    const btn = locked? `<span class="tag" style="color:var(--dim)">🔒 LL${e.ll}</span>`
+      : `<button class="sm" onclick="traderBuy('${id}','${cat}',${i})" ${G.money>=cost?'':'disabled'}>${cat==='ammo'?'×30 = ':''}${fmt(cost)} ₽</button>`;
+    return `<div class="item" style="${locked?'opacity:.55':''}"><span>${w.name} <span class="muted">· ${extra(w)}</span></span>${btn}</div>`;
+  };
+  const wareSec=(cat,title,extra)=> (tr.stock[cat]&&tr.stock[cat].length)?
+    `<h3 style="color:var(--accent);margin:12px 0 4px">${title}</h3>${tr.stock[cat].map((e,i)=>wareRow(cat,e,i,extra)).join('')}` : '';
+
+  o.innerHTML=`<div class="panel" style="width:640px;max-width:94vw;max-height:88vh;overflow:auto">
+    <div class="spread"><h2 style="border:none;margin:0">${tr.name} <span class="muted">LL ${lvl}/6</span></h2>
+      <button class="sm" onclick="openTraderHub()">← traders</button></div>
+    <div class="muted" style="font-size:12px">${tr.blurb}</div>
+    ${lvlBlock}
+    <h3 style="color:var(--accent);margin:14px 0 6px">📋 Missions</h3>${mRows}
+    <h3 style="color:var(--accent);margin:14px 0 2px">🛒 Wares <span class="muted" style="font-size:11px;text-transform:none">unlock with loyalty level</span></h3>
+    ${wareSec('weapons','⚔ Weapons',w=>`${w.cal} · ergo ${w.ergo}`)}
+    ${wareSec('ammo','🔸 Ammo (×30)',w=>`${w.dmg}d ${w.pen}pen`)}
+    ${wareSec('armors','🦺 Body Armor',w=>`class ${w.cls}`)}
+    ${wareSec('helmets','🪖 Helmets',w=>`class ${w.cls}`)}
+    ${wareSec('backpacks','🎒 Backpacks',w=>`${w.pts} pts`)}
+    ${wareSec('rigs','🎽 Tactical Rigs',w=>`${w.pts} pts`)}
+    ${wareSec('meds','💊 Meds',w=>`${w.heal?`+${w.heal} HP`:''}${w.cure?(w.heal?' · ':'')+(w.cure>2?'stops all bleed':'stops bleed'):''}`)}
+    <button class="wide primary" style="margin-top:12px" onclick="closeOv()">Close</button>
+  </div>`;
+  $('overlay-root').innerHTML=''; $('overlay-root').appendChild(o);
+}
+
+/* ============================================================
+   ARSENAL (sell spares)
+   ============================================================ */
+function openArsenal(){
+  const o=document.createElement('div'); o.className='overlay';
+  const sec=(arr,type,fmtLine)=> arr.length? arr.map((it,i)=>`<div class="item">
+      <span style="color:${TIERS[it.tier]?.color}">${fmtLine(it)}</span>
+      <button class="sm" onclick="sellArsenal('${type}',${i})">Sell ${fmt(it.value)}₽</button></div>`).join('') : '<div class="muted">none</div>';
+  o.innerHTML=`<div class="panel" style="width:600px;max-width:94vw;max-height:86vh;overflow:auto">
+    <h2>Arsenal <span class="muted">spare gear — equip from Loadout, sell here</span></h2>
+    <h3 style="color:var(--accent);margin:8px 0 4px">⚔ Weapons</h3>${sec(G.arsenal.weapons,'weapons',it=>`${it.data.name} · ${it.data.cal}`)}
+    <h3 style="color:var(--accent);margin:10px 0 4px">🦺 Armor</h3>${sec(G.arsenal.armors,'armors',it=>`${it.data.name} · class ${it.data.cls}`)}
+    <h3 style="color:var(--accent);margin:10px 0 4px">🪖 Helmets</h3>${sec(G.arsenal.helmets,'helmets',it=>`${it.data.name} · class ${it.data.cls}`)}
+    <h3 style="color:var(--accent);margin:10px 0 4px">🎒 Backpacks</h3>${sec(G.arsenal.backpacks,'backpacks',it=>`${it.data.name} · ${it.data.pts} pts`)}
+    <h3 style="color:var(--accent);margin:10px 0 4px">🎽 Rigs</h3>${sec(G.arsenal.rigs,'rigs',it=>`${it.data.name} · ${it.data.pts} pts`)}
+    <button class="wide primary" style="margin-top:12px" onclick="closeOv()">Close</button>
+  </div>`;
+  $('overlay-root').innerHTML=''; $('overlay-root').appendChild(o);
+}
+function sellArsenal(type,i){
+  const it=G.arsenal[type][i]; if(!it)return; const v=Math.round(it.value*incomeMult()); G.money+=v; G.arsenal[type].splice(i,1);
+  toast('Sold '+it.name+' +'+fmt(v)+'₽','var(--gold)'); $('overlay-root').innerHTML=''; openArsenal();
+}
+function sellAll(){ const v=Math.round(G.stash.reduce((a,i)=>a+i.value,0)*incomeMult()); if(!v)return; G.money+=v; G.stash=[]; toast('Sold stash +'+fmt(v)+'₽','var(--gold)'); render(); }
+function sellTrash(){ let v=0; G.stash=G.stash.filter(i=>{ if(i.tier==='junk'){v+=i.value;return false;} return true;}); v=Math.round(v*incomeMult()); G.money+=v; toast('Sold junk +'+fmt(v)+'₽','var(--gold)'); render(); }
+
+/* ============================================================
+   BASE / HIDEOUT UI
+   ============================================================ */
+function openBase(){
+  const o=document.createElement('div'); o.className='overlay'; o.id='base-ov';
+  const now=Date.now();
+  // module cards
+  const moduleCard=(m)=>{
+    const lvl=moduleLevel(m.id), t=m.tiers[lvl], building=G.base.builds.find(b=>b.id===m.id);
+    let action;
+    if(building){ const left=Math.max(0,(building.finishAt-now)/1000), pct=clamp(100-left/building.dur*100,0,100);
+      action=`<div class="muted" style="font-size:11px">Building L${building.toLevel} · <span id="bld-lbl-${m.id}">${Math.ceil(left)}</span>s</div><div class="bar" style="margin-top:3px"><span id="bld-bar-${m.id}" style="width:${pct}%;background:var(--warn)"></span></div>`;
+    } else if(!t){ action='<span class="tag" style="color:var(--good);border-color:var(--good)">MAX</span>';
+    } else {
+      const ok=reqMet(t)&&G.money>=t.money&&hasMats(t.mats);
+      action=`<div class="muted" style="font-size:10px;margin:3px 0">→ L${lvl+1}: ${fmt(t.money)}₽ · ${matsText(t.mats)} · ${t.time}s${t.req?` · <span style="${reqMet(t)?'':'color:var(--danger)'}">needs ${Object.entries(t.req).map(([k,v])=>MODULE_BY_ID[k].name+' L'+v).join(', ')}</span>`:''}</div>
+        <button class="primary sm" onclick="startBuild('${m.id}')" ${ok?'':'disabled'}>${lvl===0?'Build':'Upgrade'}</button>`;
+    }
+    let craftBlock='';
+    // Bitcoin Farm — passive accrual + claim
+    if(m.id==='bitcoin' && lvl>0){
+      const acc=G.base.btc||0, cap=btcCap(lvl), ready=Math.floor(acc);
+      craftBlock=`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:5px">
+        <div class="spread"><span class="muted" style="font-size:11px">₿ <span id="btc-lbl">${acc.toFixed(2)}</span>/${cap} BTC · ${(btcRate(lvl)*3600).toFixed(0)}/hr</span>
+          <button class="sm" onclick="claimBitcoin()" ${ready>=1?'':'disabled'}>Claim ${ready} (${fmt(ready*BTC_VALUE)}₽)</button></div>
+        <div class="bar" style="margin-top:3px"><span id="btc-bar" style="width:${clamp(acc/cap*100,0,100)}%;background:var(--gold)"></span></div></div>`;
+    }
+    // crafting stations — active job + queue + recipe list
+    const recs=recipesFor(m.id);
+    if(lvl>0 && recs.length){
+      const active=activeCraft(m.id), queued=G.base.crafts.filter(c=>c.mod===m.id && !c.finishAt), total=moduleJobs(m.id).length;
+      let rows='';
+      if(active){ const r=RECIPES.find(x=>x.id===active.rid), left=Math.max(0,(active.finishAt-now)/1000), pct=clamp(100-left/active.dur*100,0,100);
+        rows+=`<div class="spread"><span class="muted" style="font-size:11px">⚙ ${r.name} · <span id="crf-lbl-${m.id}">${Math.ceil(left)}</span>s</span><button class="sm danger" onclick="cancelCraft(${active.uid})">✕</button></div><div class="bar" style="margin:3px 0"><span id="crf-bar-${m.id}" style="width:${pct}%;background:var(--accent)"></span></div>`; }
+      rows+=queued.map(q=>{ const r=RECIPES.find(x=>x.id===q.rid);
+        return `<div class="item"><span class="muted" style="font-size:11px">⏳ ${r.name} (queued)</span><button class="sm danger" onclick="cancelCraft(${q.uid})">✕</button></div>`; }).join('');
+      if(total<MAX_QUEUE){
+        rows+=recs.map(r=>{ const ok=G.money>=r.money&&hasMats(r.mats);
+          return `<div class="item"><span style="font-size:12px">${r.name} <span class="muted">${fmt(r.money)}₽ · ${matsText(r.mats)} · ${r.time}s</span></span>
+            <button class="sm" onclick="startCraft('${r.id}')" ${ok?'':'disabled'}>${active?'Queue':'Craft'}</button></div>`; }).join('');
+      } else rows+='<div class="muted" style="font-size:11px">Queue full ('+MAX_QUEUE+')</div>';
+      craftBlock+=`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:5px">${rows}</div>`;
+    }
+    return `<div class="loc" style="cursor:default">
+      <div class="spread"><div><b>${m.icon} ${m.name}</b> <span class="muted">L${lvl}/${m.tiers.length}</span>
+        <div class="muted" style="font-size:11px">${m.desc}</div></div>
+        <div style="text-align:right;min-width:130px">${action}</div></div>
+      ${craftBlock}</div>`;
+  };
+  // materials market
+  const matRow=MATERIALS.map(m=>`<div class="item"><span>🔧 ${m} <span class="muted">×${matCount(m)}</span></span>
+    <button class="sm" onclick="buyMaterial('${m}')" ${G.money>=MATERIAL_PRICE[m]?'':'disabled'}>Buy ${fmt(MATERIAL_PRICE[m])}₽</button></div>`).join('');
+  // raiders
+  const raiderBlock = G.raiders.length? G.raiders.map(renderRaiderCard).join('') : '<div class="muted">No raiders yet.</div>';
+  const canHire = G.raiders.length<maxRaiders();
+  const idleCount = G.raiders.filter(r=>r.status==='idle').length;
+  const squadControl = idleCount>1? `<div class="loc" style="cursor:default">
+    <div class="spread"><b>🪖 Squad Deploy</b><span class="muted" style="font-size:11px">${idleCount} idle · safer in numbers</span></div>
+    <div class="row" style="margin-top:6px">
+      <select id="squad-loc">${LOCATIONS.filter(l=>!l.gated).map(l=>`<option value="${l.id}">${l.name}</option>`).join('')}</select>
+      <select id="squad-focus">${Object.entries(RAID_FOCUS).map(([k,f])=>`<option value="${k}">${f.icon} ${f.name}</option>`).join('')}</select>
+      <button class="primary sm" onclick="deploySquad(document.getElementById('squad-loc').value, document.getElementById('squad-focus').value)">Send all ${idleCount} together</button>
+    </div>
+    <div class="muted" style="font-size:11px;margin-top:4px">Auto-kits each unarmed raider with the best spare gear in your arsenal.</div>
+  </div>` : '';
+
+  o.innerHTML=`<div class="panel" style="width:680px;max-width:95vw;max-height:90vh;overflow:auto">
+    <div class="spread"><h2 style="border:none;margin:0">🏗 Hideout</h2><span class="muted">${fmt(G.money)} ₽</span></div>
+    <h3 style="color:var(--accent);margin:10px 0 6px">Modules</h3>
+    ${MODULES.map(moduleCard).join('')}
+    <h3 style="color:var(--accent);margin:14px 0 6px">🛏 Raiders <span class="muted" style="font-size:11px;text-transform:none">${G.raiders.length}/${maxRaiders()} beds</span></h3>
+    ${squadControl}
+    ${raiderBlock}
+    <button class="wide" style="margin-top:6px" onclick="hireRaider()" ${canHire?'':'disabled'}>${canHire?`Hire raider — ${fmt(hireCost())} ₽`:'Barracks full — upgrade for more beds'}</button>
+    <h3 style="color:var(--accent);margin:14px 0 6px">🔧 Materials Market</h3>
+    ${matRow}
+    <button class="wide primary" style="margin-top:12px" onclick="closeOv()">Close</button>
+  </div>`;
+  $('overlay-root').innerHTML=''; $('overlay-root').appendChild(o);
+}
+
+// live-update countdown labels/bars in the open base overlay without rebuilding it
+function updateBaseTimers(now){
+  const set=(lid,bid,finishAt,dur)=>{ const l=$(lid),b=$(bid); const left=Math.max(0,(finishAt-now)/1000);
+    if(l)l.textContent=Math.ceil(left); if(b)b.style.width=clamp(100-left/dur*100,0,100)+'%'; };
+  G.base.builds.forEach(b=>set('bld-lbl-'+b.id,'bld-bar-'+b.id,b.finishAt,b.dur));
+  G.base.crafts.forEach(c=>{ if(c.finishAt) set('crf-lbl-'+c.mod,'crf-bar-'+c.mod,c.finishAt,c.dur); });
+  G.raiders.forEach(r=>{ if(r.status==='raiding') set('rdr-lbl-'+r.id,'rdr-bar-'+r.id,r.returnAt,r.raidDur||60); });
+  const bl=moduleLevel('bitcoin');
+  if(bl>0){ const acc=G.base.btc||0, cap=btcCap(bl); const l=$('btc-lbl'), b=$('btc-bar');
+    if(l)l.textContent=acc.toFixed(2); if(b)b.style.width=clamp(acc/cap*100,0,100)+'%'; }
+}
+
+/* ============================================================
+   RAIDERS (passive crew)
+   ============================================================ */
+function baseOrRender(){ if(document.getElementById('base-ov')) openBase(); else render(); }
+function hireRaider(){
+  if(maxRaiders()<=0) return toast('Build a Barracks first','var(--danger)');
+  if(G.raiders.length>=maxRaiders()) return toast('Barracks full — upgrade it for more beds','var(--danger)');
+  const cost=hireCost(); if(G.money<cost) return toast('Not enough roubles','var(--danger)');
+  G.money-=cost;
+  G.raiders.push({id:++raiderId,name:pick(RAIDER_NAMES)+' '+ri(10,99),skill:1.0,status:'idle',weapon:null,armor:null,returnAt:0,locId:'customs',raidsDone:0});
+  toast('Raider hired','var(--accent)'); baseOrRender();
+}
+function fireRaider(id){ const r=G.raiders.find(r=>r.id===id); if(!r||r.status==='raiding')return;
+  if(r.weapon)G.arsenal.weapons.push(r.weapon); if(r.armor)G.arsenal.armors.push(r.armor);
+  G.raiders=G.raiders.filter(x=>x.id!==id); baseOrRender();
+}
+function renderRaiderCard(r){
+  let body;
+  if(r.status==='raiding'){
+    const left=Math.max(0,(r.returnAt-Date.now())/1000), total=r.raidDur||60, pct=clamp(100-(left/total*100),0,100);
+    body=`<div class="muted" style="font-size:12px">${r.focus?RAID_FOCUS[r.focus].icon+' ':''}Raiding ${LOCATIONS.find(l=>l.id===r.locId)?.name||''}${r.squad>1?` <span style="color:var(--accent)">· squad of ${r.squad}</span>`:''} · <span id="rdr-lbl-${r.id}">${Math.ceil(left)}</span>s</div>
+      <div class="bar" style="margin-top:4px"><span id="rdr-bar-${r.id}" style="width:${pct}%;background:var(--warn)"></span></div>`;
+  } else {
+    body=`<div class="row" style="margin-top:6px">
+      <select id="rw-${r.id}"><option value="">— no weapon —</option>${G.arsenal.weapons.map((w,i)=>`<option value="${i}">${w.data.name}</option>`).join('')}</select>
+      <select id="ra-${r.id}"><option value="">— no armor —</option>${G.arsenal.armors.map((a,i)=>`<option value="${i}">${a.data.name} (c${a.data.cls})</option>`).join('')}</select>
+      <select id="rl-${r.id}">${LOCATIONS.filter(l=>!l.gated).map(l=>`<option value="${l.id}">${l.name}</option>`).join('')}</select>
+      <select id="rf-${r.id}" title="focus">${Object.entries(RAID_FOCUS).map(([k,f])=>`<option value="${k}" ${r.focus===k?'selected':''}>${f.icon} ${f.name}</option>`).join('')}</select>
+      <button class="primary sm" onclick="sendRaider(${r.id})">Send</button>
+      <button class="danger sm" onclick="fireRaider(${r.id})">✕</button></div>`;
+  }
+  return `<div class="raider"><div class="spread"><span class="nm">${r.name}</span>
+    <span class="muted">skill ${r.skill.toFixed(1)} · ${r.raidsDone} raids</span></div>${body}</div>`;
+}
+function sendRaider(id){
+  const r=G.raiders.find(r=>r.id===id); if(!r)return;
+  const wi=$('rw-'+id).value, ai=$('ra-'+id).value, loc=$('rl-'+id).value, fc=$('rf-'+id)?$('rf-'+id).value:'loot';
+  if(wi!=='') r.weapon=G.arsenal.weapons.splice(+wi,1)[0];
+  if(ai!=='') r.armor=G.arsenal.armors.splice(+ai,1)[0];
+  const L=LOCATIONS.find(l=>l.id===loc);
+  const timeMult=(1-intelLevel()*0.12)*raiderSpeedMult();   // Intel Center + prestige Crew Efficiency
+  r.status='raiding'; r.locId=loc; r.focus=fc; r.raidDur=L.raidLen*0.5*timeMult; r.returnAt=Date.now()+r.raidDur*1000; r.squad=1;
+  toast(`${r.name} → ${L.name} (${RAID_FOCUS[fc].name})`,'var(--warn)'); baseOrRender();
+}
+// pull the highest-value item out of an arsenal array
+function bestFromArsenal(arr){ if(!arr.length) return null; let bi=0; for(let i=1;i<arr.length;i++) if(arr[i].value>arr[bi].value) bi=i; return arr.splice(bi,1)[0]; }
+// send every idle raider on the same raid together (auto-kitting from the arsenal)
+function deploySquad(locId, focus){
+  focus=focus||'loot';
+  const idle=G.raiders.filter(r=>r.status==='idle');
+  if(idle.length<2) return toast('Need at least 2 idle raiders','var(--danger)');
+  const L=LOCATIONS.find(l=>l.id===locId);
+  const dur=L.raidLen*0.5*(1-intelLevel()*0.12)*raiderSpeedMult(), returnAt=Date.now()+dur*1000;
+  for(const r of idle){
+    if(!r.weapon){ const w=bestFromArsenal(G.arsenal.weapons); if(w) r.weapon=w; }
+    if(!r.armor){ const a=bestFromArsenal(G.arsenal.armors); if(a) r.armor=a; }
+    r.status='raiding'; r.locId=locId; r.focus=focus; r.raidDur=dur; r.returnAt=returnAt; r.squad=idle.length;
+  }
+  toast(`Squad of ${idle.length} → ${L.name} (${RAID_FOCUS[focus].name})`,'var(--warn)'); baseOrRender();
+}
+// produce one loot item for a raider, biased by their focus
+function raiderLootItem(L, r, focus){
+  const depthBonus = r.skill*0.15 + intelLevel()*0.2;
+  if(focus==='resources' && Math.random()<0.7){
+    const name=pick(MATERIALS), cnt=ri(1,3);
+    return {kind:'material', name, count:cnt, value:Math.round((MATERIAL_PRICE[name]||3000)*0.5)*cnt, tier:'common'};
+  }
+  if(focus==='gear' && Math.random()<0.6){
+    const lvl=clamp(0.3 + r.skill*0.06, 0, 1), roll=Math.random();
+    if(roll<0.5){ const w=gearByLevel(WEAPONS,lvl); return {kind:'weapon',name:w.name,value:w.val,tier:'rare',data:{...w}}; }
+    if(roll<0.8){ const a=gearByLevel(ARMORS,lvl);  return {kind:'armor', name:a.name,value:a.val,tier:'rare',data:{...a}}; }
+    const h=gearByLevel(HELMETS.slice(1),lvl);       return {kind:'helmet',name:h.name,value:h.val,tier:'rare',data:{...h}};
+  }
+  // pvp hunts richer targets → push the loot tier up
+  return rollLoot(L.lootBias, depthBonus + (focus==='pvp'?0.6:0));
+}
+function resolveRaider(r){
+  const L=LOCATIONS.find(l=>l.id===r.locId);
+  const focus=r.focus||'loot';
+  const wPow=r.weapon? r.weapon.data.dmgMod*30 : 8;
+  const aPro=r.armor? r.armor.data.cls*9 : 0;
+  const squadBonus = r.squad>1? Math.min(0.18,(r.squad-1)*0.04) : 0;   // safer in numbers
+  const focusSurv = focus==='pvp'? -0.12 : focus==='resources'? 0.05 : 0;
+  let surv=clamp(0.5 + r.skill*0.06 + wPow*0.004 + aPro*0.006 - L.risk*0.12 + intelLevel()*0.02 + squadBonus + focusSurv, 0.15, 0.97);
+  const lootCount=ri(2,4)+Math.floor(r.skill/2)+(focus==='pvp'?2:0);
+  r.raidsDone++;
+  if(Math.random()<surv){
+    let total=0, items=[]; for(let k=0;k<lootCount;k++){ const it=raiderLootItem(L,r,focus); routeLoot(it); total+=it.value; items.push(it); }
+    // crafting materials for the base (extra when focused on resources)
+    const mats=ri(1,2)+intelLevel()+(focus==='resources'?ri(2,4):0); for(let k=0;k<mats;k++){ const mn=pick(MATERIALS); G.materials[mn]=matCount(mn)+1; }
+    r.skill=Math.min(10,r.skill+0.35); r.status='idle';
+    toast(`${r.name} extracted +${fmt(total)}₽`,'var(--good)');
+    addMail(r.name, `Extracted from ${L.name}`,
+      `Run focus: <b>${RAID_FOCUS[focus].icon} ${RAID_FOCUS[focus].name}</b>${r.squad>1?` · squad of ${r.squad}`:''}.<br>
+       Haul value: <b style="color:var(--gold)">${fmt(total)}₽</b><br>${summarizeHaul(items, mats)}`, '🎒');
+  } else {
+    r.weapon=null; r.armor=null; r.skill=Math.max(1,r.skill-0.5); r.status='idle'; G.stats.deaths++;
+    toast(`${r.name} died — gear lost`,'var(--danger)');
+    addMail(r.name, `KIA on ${L.name}`, `<span style="color:var(--danger)">${r.name} was killed in action.</span> Their assigned gear was lost. They have respawned at the Barracks with reduced skill.`, '💀');
+  }
+}
+
+/* ============================================================
+   PLAYER RAID
+   ============================================================ */
+/* ---------- SCAV RUNS — free raid, random low kit, loot ramps as you survive ---------- */
+const SCAV_LOC = {id:'scav', name:'SCAV RUN', risk:1.1, combat:0.32, raidLen:70,
+  enemies:['scav','scav','pmc','sniper'], lootBias:{junk:55,common:33,rare:10,epic:2,legendary:0}};
+function scavCD(){ return Math.max(40, 180 - intelLevel()*20); }
+function scavCDLeft(){ return Math.max(0, scavCD() - (Date.now()-(G.lastScav||0))/1000); }
+function startScavRun(){
+  if(G.raid) return;
+  if(scavCDLeft()>0) return toast(`Scav recovering — ${Math.ceil(scavCDLeft())}s`,'var(--danger)');
+  const w=pick(WEAPONS.filter(x=>x.val<=62000));                       // random cheap gun
+  const am=(AMMO_BY_CAL[w.cal]||[]).slice().sort((a,b)=>a.val-b.val)[0]; // cheapest matching ammo
+  G._scav={ gear:G.gear, ammoName:am?am.name:null, ammoHad:am?(G.ammoStock[am.name]||0):0 };
+  G.gear={ weapons:[{...w},null], ammos:[am?am.name:'',''], active:0,
+    armor:{...pick(ARMORS.slice(0,3))}, helmet:{...pick(HELMETS.slice(0,4))}, backpack:{...BACKPACKS[0]}, rig:{...RIGS[0]} };
+  if(am) G.ammoStock[am.name]=(G.ammoStock[am.name]||0)+240;
+  G.lastScav=Date.now(); sfx('click');
+  startRaid('scav');
+  pushLog(`Spawned as a <b>Scav</b> with a ${w.name}. Free kit — push deeper for better loot, but don't get greedy.`);
+  render();
+}
+function endRaidCleanup(){   // restore real loadout after a scav run
+  if(G._scav){ if(G._scav.ammoName) G.ammoStock[G._scav.ammoName]=G._scav.ammoHad; G.gear=G._scav.gear; G._scav=null; }
+}
+function startRaid(locId){
+  const L = locId==='scav'? SCAV_LOC : LOCATIONS.find(l=>l.id===locId);
+  if(L.gated){ if(G.keys<1) return toast('No keycard','var(--danger)'); G.keys--; }
+  G.raid={loc:L,depth:0,hp:100,maxHp:100,bleed:0,combo:0,carried:[],carriedVal:0,log:[],combat:null,scavCooldown:0,alive:true,mag:[0,0],magAmmo:['',''],isScav:locId==='scav',autoScavT:0};
+  loadAllMags();
+  pushLog(`Inserted into <b style="color:var(--accent)">${L.name}</b>. Carry capacity: ${carryCapacity()} pts. Scavenge, fight, extract.`);
+  render();
+}
+function comboMult(r){ return 1 + Math.min(1.2, (Math.max(0,(r.combo||0)-1))*0.05); }   // greed: builds as you keep scavenging
+function pushLog(m){ if(G.raid){ G.raid.log.push(m); if(G.raid.log.length>60)G.raid.log.shift(); } }
+// returns false if there's no room (in points) to carry the item
+function addCarried(it){
+  const r=G.raid; if(!r) return false;
+  if(carriedPoints()+itemPoints(it) > carryCapacity()) return false;
+  r.carried.push(it); r.carriedVal+=it.value; return true;
+}
+
+function renderRaid(){
+  const r=G.raid; if(!r)return;
+  const dr=currentDeathChance();
+  const slots=carriedPoints(), cap=carryCapacity(), full=slots>=cap;
+  const meds=ownedMeds();
+  $('screen-raid').innerHTML=`
+  <div class="panel">
+    <h2>${r.isScav?'<span style="color:var(--warn)">☣ </span>':''}${r.loc.name} <span class="muted">depth ${Math.round(r.depth)}m · carried ${fmt(r.carriedVal)} ₽${comboMult(r)>1.01?` · <span style="color:var(--gold)">×${comboMult(r).toFixed(2)} greed</span>`:''}</span></h2>
+    ${r.isScav?'<div class="muted" style="font-size:11px;margin-bottom:6px;color:var(--warn)">SCAV RUN — free random kit. Your own gear is safe. Loot improves the longer you survive.</div>':''}
+    <div class="spread" style="margin-bottom:6px"><span class="muted">HEALTH${r.bleed>0?` <span class="blink" style="color:var(--danger)">🩸 BLEEDING ×${r.bleed}</span>`:''}</span>
+      <span id="raidHpTxt" style="color:${r.hp<35?'var(--danger)':'var(--good)'}">${Math.round(r.hp)}/${r.maxHp}</span></div>
+    <div class="bar"><span id="raidHpBar" style="width:${clamp(r.hp,0,100)}%;background:${r.hp<35?'var(--danger)':'var(--good)'}"></span></div>
+    ${meds.length?`<div class="row" style="margin-top:8px">${meds.map(m=>`<button class="sm" onclick="useMed('${m.name}')">🩹 ${m.name} ×${medCount(m.name)}</button>`).join('')}</div>`
+      :`<div class="muted" style="font-size:11px;margin-top:6px">No meds in your pouch — buy from Therapist before raiding.</div>`}
+
+    <div class="spread" style="margin:12px 0 4px"><span class="muted">CARRY — bag ${G.gear.backpack.pts} + rig ${G.gear.rig?G.gear.rig.pts:0} + pockets ${POCKET_POINTS}</span>
+      <span style="color:${full?'var(--danger)':'var(--dim)'}">${slots}/${cap} pts${full?' — FULL':''}</span></div>
+    <div class="bar"><span style="width:${clamp(slots/cap*100,0,100)}%;background:${full?'var(--danger)':'var(--gold)'}"></span></div>
+
+    <div class="spread" style="margin:12px 0 4px"><span class="muted">DEPTH — fill to 100m to reach the exit & auto-extract</span>
+      <span style="color:var(--warn)">death risk/scav ≈ ${Math.round(dr*100)}%</span></div>
+    <div class="bar"><span style="width:${r.depth}%;background:linear-gradient(90deg,var(--accent),var(--warn) 70%,var(--danger))"></span></div>
+    <button class="primary scav-btn ${r.scavCooldown>0?'':'blink'}" id="scavBtn" onclick="scavenge()" ${r.scavCooldown>0?'disabled':''}>
+      ${r.scavCooldown>0?'...searching...':'⛏ SCAVENGE'}</button>
+    <div class="row" style="margin-top:8px"><button class="wide primary" onclick="extract()">⤴ EXTRACT — bank ${fmt(r.carriedVal)} ₽</button></div>
+    <div class="muted" style="font-size:11px;margin-top:4px;text-align:center">Deeper = better loot but higher risk — until 100m, where you auto-extract safely.</div>
+  </div>
+  <div class="panel" style="margin-top:12px"><h2>Carried <span class="muted">${slots}/${cap} pts · lost if you die</span></h2>
+    <div class="feed">${r.carried.length? r.carried.slice().reverse().map(itemRow).join('') : '<div class="muted">nothing yet</div>'}</div></div>
+  <div class="panel" style="margin-top:12px"><h2>Raid Log</h2>
+    <div class="feed">${r.log.slice().reverse().map(m=>`<div>${m}</div>`).join('')}</div></div>`;
+}
+function currentDeathChance(){
+  const r=G.raid;
+  const hpPenalty = 1 + (1 - clamp(r.hp,0,100)/100)*1.5;   // wounded = much riskier
+  const bleedPenalty = 1 + (r.bleed||0)*0.30;
+  return clamp((0.05 + (r.depth/100)*0.32) * r.loc.risk * loadoutMitigation() * hpPenalty * bleedPenalty, 0.01, 0.94);
+}
+function scavenge(){
+  const r=G.raid; if(!r||!r.alive||r.combat||r.scavCooldown>0)return;
+  r.depth=clamp(r.depth+rnd(6,12),0,100);
+  G.progress.bestDepth=Math.max(G.progress.bestDepth,r.depth);
+  if(r.depth>=100){
+    const it=rollLoot(r.loc.lootBias,3); addCarried(it);
+    pushLog(`Reached the <b style="color:var(--good)">exit</b>. Grabbed <span style="color:${TIERS[it.tier].color}">${it.name}</span> on the way out.`);
+    toast('Max depth — auto-extracted!','var(--good)'); extract(); return;
+  }
+  if(Math.random()<r.loc.combat*(0.6+r.depth/120)){ startCombat(); return; }
+  if(Math.random()<currentDeathChance()){ playerDie(r.isScav?'Your scav got domed.':'A guard caught you mid-scav.'); return; }
+  r.combo=(r.combo||0)+1;
+  const it=rollLoot(r.loc.lootBias, r.isScav? r.depth/14 : r.depth/40);   // scav loot ramps faster the longer you live
+  it.value=Math.round(it.value*comboMult(r));
+  if(addCarried(it)){
+    sfx('click'); juiceLoot(it);
+    if(it.kind==='key') pushLog(`<b style="color:var(--gold)">★ FOUND A LABS ACCESS KEYCARD ★</b>`);
+    else pushLog(`Found <span style="color:${TIERS[it.tier].color}">${(it.kind==='ammo'||it.kind==='med')&&it.count>1?it.name+' ×'+it.count:it.name}</span> (+${fmt(it.value)}₽)${r.combo>2?` <span class="muted">×${comboMult(r).toFixed(2)} combo</span>`:''}`);
+  } else {
+    pushLog(`Found <span style="color:${TIERS[it.tier].color}">${it.name}</span> but your <b style="color:var(--danger)">backpack is full</b> — left it behind.`);
+  }
+  r.scavCooldown=0.35; render();
+}
+function extract(){
+  const r=G.raid; if(!r||!r.alive)return;
+  const loc=r.loc.id;
+  const haul=r.carried.slice(), val=r.carriedVal;
+  haul.forEach(routeLoot);                 // bank everything carried
+  G.stats.extracts++;
+  G.progress.extracts++; G.progress.extractsAt[loc]=(G.progress.extractsAt[loc]||0)+1;
+  // tear down any combat overlay just in case
+  const cov=$('combat-ov'); if(cov) cov.remove();
+  const wasScav=G.raid.isScav;
+  G.raid=null; endRaidCleanup(); save();
+  sfx('extract'); bigBanner(wasScav?'SCAV EXTRACT':'EXTRACTED','var(--good)');
+  showExtractSummary(haul,val,loc);
+}
+function showExtractSummary(haul,val,loc){
+  const ready=anyMissionReady();
+  $('overlay-root').innerHTML=`<div class="overlay"><div class="panel" style="width:480px;max-width:94vw;max-height:84vh;overflow:auto;text-align:center">
+    <h1 style="color:var(--good);font-size:34px;letter-spacing:2px">✓ EXTRACTED</h1>
+    <div class="muted" style="margin-bottom:10px">You made it out of ${LOCATIONS.find(l=>l.id===loc)?.name||''}. Loot secured to your stash.</div>
+    <div style="text-align:left;max-height:38vh;overflow:auto;border:1px solid var(--line);padding:6px;background:#0a0c08">
+      ${haul.length? haul.slice().reverse().map(itemRow).join('') : '<div class="muted">No loot this run — but you survived.</div>'}
+    </div>
+    <div style="color:var(--gold);font-size:20px;margin-top:12px">Total hauled: ${fmt(val)} ₽</div>
+    ${ready?'<div style="color:var(--accent);margin-top:6px">● A trader mission is ready to claim</div>':''}
+    <button class="primary wide" style="margin-top:14px" onclick="closeOv()">Return to hideout</button>
+  </div></div>`;
+}
+function playerDie(reason){
+  const r=G.raid; G.stats.deaths++; r.alive=false; const lost=r.carriedVal; const wasScav=r.isScav;
+  sfx('kill'); shake('#app',10);
+  $('overlay-root').innerHTML=`<div class="overlay"><div class="deathscreen panel" style="padding:30px 40px">
+    <h1>YOU ARE DEAD</h1><div class="muted" style="margin-bottom:8px">${reason}</div>
+    <div style="color:var(--danger);margin-bottom:16px">Lost ${fmt(lost)} ₽ of carried loot.${wasScav?'<br><span class="muted">(Scav kit was free — your own gear is safe.)</span>':''}</div>
+    <button class="primary" onclick="leaveRaid()">Back to hideout</button></div></div>`;
+}
+function leaveRaid(){ endRaidCleanup(); $('overlay-root').innerHTML=''; G.raid=null; render(); }
+
+/* ============================================================
+   COMBAT (aiming + penetration)
+   ============================================================ */
+function startCombat(){
+  const r=G.raid;
+  const c={ squadSize:ri(1,5), killedCount:0, targets:[], lootGrab:null, over:false };
+  r.combat=c;
+  spawnEnemy(c);
+  pushLog(`<b style="color:var(--danger)">Contact!</b> ${c.squadSize} hostile${c.squadSize>1?'s':''} in the area.`);
+  renderCombat();
+}
+function spawnEnemy(c){
+  const base=ENEMY[pick(G.raid.loc.enemies)];
+  c.name=base.name; c.armorCls=base.armorCls; c.helmetCls=base.helmetCls; c.dmg=base.dmg;
+  c.bleed=base.bleed||0; c.gun=pick(base.guns);   // gun is a guaranteed drop on kill
+  c.hp=Math.round(base.hp*rnd(0.85,1.15)); c.maxHp=c.hp;
+  c.aggro=100; c.aggroSpeed=base.aim*rnd(0.85,1.15); c.over=false;
+  spawnTargets();
+}
+function spawnTargets(){
+  const c=G.raid.combat; if(!c)return;
+  const ergo=(activeEff()?.ergo)||40;
+  const handling=1-clamp(ergo/170,0,0.6);  // low ergo → faster targets
+  const layout=[
+    {type:'head',label:'HEAD',size:22,mult:2.6,x:50,y:16,sp:22},
+    {type:'body',label:'CHEST',size:62,mult:1.0,x:50,y:46,sp:5},
+    {type:'limb',label:'ARM',size:38,mult:0.4,x:24,y:46,sp:11},
+    {type:'limb',label:'ARM',size:38,mult:0.4,x:76,y:46,sp:11},
+    {type:'limb',label:'LEG',size:40,mult:0.7,x:40,y:78,sp:9},
+    {type:'limb',label:'LEG',size:40,mult:0.7,x:60,y:78,sp:9},
+  ];
+  c.targets=layout.map((t,i)=>{
+    const speed=t.sp*handling*rnd(0.7,1.3);
+    const ang=rnd(0,Math.PI*2);
+    return {...t,id:i,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed*0.6};
+  });
+}
+function partArmor(c,type){ return type==='head'? c.helmetCls : type==='body'? c.armorCls : 0; }
+function renderCombat(){
+  const c=G.raid?.combat; if(!c)return;
+  let ov=$('combat-ov');
+  if(!ov){ ov=document.createElement('div'); ov.className='overlay'; ov.id='combat-ov'; $('overlay-root').appendChild(ov); }
+  const am=currentAmmo();
+  const meds=ownedMeds();
+  ov.innerHTML=`
+    <div style="width:580px;max-width:94vw;margin-bottom:6px" class="spread">
+      <div><b style="color:var(--danger)">${c.name}</b> <span class="muted">armor c${c.armorCls} · helmet c${c.helmetCls}${c.squadSize>1?` · enemy ${c.killedCount+1}/${c.squadSize}`:''}</span></div>
+      <div class="muted">your HP <b id="yourHp" style="color:${G.raid.hp<35?'var(--danger)':'var(--good)'}">${Math.round(G.raid.hp)}</b>${G.raid.bleed>0?` <span class="blink" style="color:var(--danger)">🩸×${G.raid.bleed}</span>`:''}</div>
+    </div>
+    <div style="width:580px;max-width:94vw;margin-bottom:6px" class="spread">
+      <div class="row">
+        <button class="sm ${G.raid.mag[G.gear.active]<=0?'blink':''}" style="${G.raid.mag[G.gear.active]<=0?'border-color:var(--danger);color:var(--danger)':''}" onclick="reloadActive()">🔄 RELOAD</button>
+        ${hasSecondary()?`<button class="sm" onclick="switchWeapon()">⇄ ${G.gear.weapons[G.gear.active===0?1:0].name}</button>`:''}
+      </div>
+      <div class="row">
+        ${meds.length? meds.slice(0,3).map(m=>`<button class="sm" onclick="useMed('${m.name}')">🩹 ${m.name.split(' ')[0]} ×${medCount(m.name)}</button>`).join('') : '<span class="muted" style="font-size:11px">no meds</span>'}
+      </div>
+    </div>
+    <div class="bar" style="width:580px;max-width:94vw"><span id="enemyHpBar" style="width:${clamp(c.hp/c.maxHp*100,0,100)}%;background:var(--danger)"></span></div>
+    <div class="arena" id="arena" onclick="missShot(event)">
+      <div class="crosshair-info">
+        <span id="ammoTxt" style="color:${G.raid.mag[G.gear.active]>0?'var(--text)':'var(--danger)'}">${ammoHudText()}</span>
+        <span id="aimTxt" style="color:var(--warn)">ENEMY AIM ${Math.round(c.aggro)}%</span>
+      </div>
+      <div class="bar" style="position:absolute;bottom:0;left:0;right:0;height:8px;border:none"><span id="aimBar" style="width:${c.aggro}%;background:var(--warn)"></span></div>
+      <div class="flash" id="flash"></div>
+      ${c.targets.map(t=>{
+        const pa=partArmor(c,t.type);
+        const armTag=pa>0?`<br><span style="opacity:.8">🛡c${pa}</span>`:'';
+        return `<div class="target ${t.type}" id="tgt${t.id}" style="left:${t.x}%;top:${t.y}%;width:${t.size}px;height:${t.size}px"
+          onclick="hitTarget(event,${t.id})">${t.label}${armTag}</div>`;}).join('')}
+      ${c.lootGrab? renderLootGrab(c.lootGrab):''}
+    </div>
+    <div class="muted" style="margin-top:8px;width:580px;max-width:94vw;text-align:center">
+      Armored parts (🛡) need ammo <b>pen ≥ class×9</b> or you barely scratch them. Aim unarmored limbs or the head — but the head is small and fast.
+    </div>`;
+}
+function renderLootGrab(lg){
+  return lg.items.map((it,i)=>{
+    if(it.taken) return '';
+    if(it.kind==='weapon'){
+      return `<div class="loot-drop" style="left:${it.x}%;top:${it.y}%">
+        <div onclick="grabLoot(event,${i})" style="cursor:pointer">⚔ ${it.name} +${fmt(it.value)}₽</div>
+        <div class="row" style="gap:3px;margin-top:3px;justify-content:center">
+          <button class="sm" onclick="equipLootedGun(event,${i},0)">↦ primary</button>
+          <button class="sm" onclick="equipLootedGun(event,${i},1)">↦ second</button>
+        </div></div>`;
+    }
+    const lbl=(it.kind==='ammo'||it.kind==='med')&&it.count>1?it.name+' ×'+it.count:it.name;
+    return `<div class="loot-drop" style="left:${it.x}%;top:${it.y}%" onclick="grabLoot(event,${i})">${lbl} +${fmt(it.value)}₽</div>`;
+  }).join('')
+    +`<div class="crosshair-info" style="top:auto;bottom:14px;justify-content:center"><span class="blink" id="grabTxt" style="color:var(--gold)">GRAB LOOT (or ↦ equip a gun) — ${lg.left.toFixed(1)}s</span></div>`;
+}
+// take a downed enemy's gun straight into a weapon slot, displacing the old one
+function equipLootedGun(e,i,slot){
+  e.stopPropagation();
+  const lg=G.raid?.combat?.lootGrab; if(!lg)return;
+  const it=lg.items[i]; if(!it||it.taken||it.kind!=='weapon')return;
+  const old=G.gear.weapons[slot];
+  if(old){
+    const oldItem={kind:'weapon',name:old.name,value:old.val,tier:'common',data:old};
+    if(!addCarried(oldItem)) G.arsenal.weapons.push(oldItem);  // bag full → goes to stash arsenal
+  }
+  G.gear.weapons[slot]={...it.data};
+  pickCompatibleAmmo(slot); reloadSlot(slot); G.gear.active=slot;
+  it.taken=true;
+  pushLog(`Took <b>${it.name}</b> off the body — now your ${slot===0?'primary':'secondary'}.`);
+  toast('Equipped '+it.name,'var(--accent)');
+  if(lg.items.every(x=>x.taken)) nextEnemyOrEnd(); else renderCombat();
+}
+function ammoHudText(){
+  const s=G.gear.active, w=activeWeapon(); if(!w) return 'NO WEAPON';
+  const a=AMMO_BY_NAME[G.raid.magAmmo[s]];
+  const reserve=a?ammoCount(a.name):0;
+  return `${w.name} L${gunLevel(w.name)} · MAG ${G.raid.mag[s]}/${magCap(s)}${a?` · ${a.pen}pen · reserve ${reserve}`:''}`;
+}
+function updateCombatHUD(){
+  const c=G.raid?.combat; if(!c)return;
+  const bar=$('enemyHpBar'); if(bar) bar.style.width=clamp(c.hp/c.maxHp*100,0,100)+'%';
+  const at=$('ammoTxt');
+  if(at){ at.style.color=G.raid.mag[G.gear.active]>0?'var(--text)':'var(--danger)'; at.textContent=ammoHudText(); }
+  const hp=$('yourHp'); if(hp){ hp.textContent=Math.round(G.raid.hp); hp.style.color=G.raid.hp<35?'var(--danger)':'var(--good)'; }
+}
+// fire one round from the active magazine; returns the chambered ammo or null if empty
+function consumeRound(){
+  const s=G.gear.active; if(!G.raid) return null;
+  if(G.raid.mag[s]>0){ G.raid.mag[s]--; return magAmmo(); }
+  return null;   // empty mag — must reload
+}
+function hitTarget(e,id){
+  e.stopPropagation();
+  const c=G.raid?.combat; if(!c||c.over||c.lootGrab)return;
+  const t=c.targets.find(t=>t.id===id); if(!t)return;
+  const am=consumeRound();   // every shot costs a bullet from the mag
+  if(!am){   // empty magazine — the gun won't fire. You MUST reload.
+    spawnHitText(t.x,t.y,'*click*','var(--danger)'); sfx('err');
+    const at=$('ammoTxt'); if(at){ at.textContent='EMPTY — RELOAD'; at.style.color='var(--danger)'; }
+    return;
+  }
+  const penF=penFactor(am.pen, partArmor(c,t.type));
+  const crit = Math.random()<0.12;   // juice: critical hits
+  let dmg=am.dmg*activeEff().dmgMod*t.mult*penF*rnd(0.9,1.1)*dmgMult();
+  if(crit) dmg*=3;
+  c.hp-=dmg;
+  // floating feedback
+  const blocked = penF<0.35 && partArmor(c,t.type)>0;
+  if(crit && !blocked){ spawnHitText(t.x,t.y,'CRIT '+Math.round(dmg),'var(--gold)',true); sfx('crit'); shake('.arena',7); }
+  else { spawnHitText(t.x,t.y, blocked?'ARMOR':Math.round(dmg), blocked?'var(--dim)':(t.type==='head'?'var(--gold)':'#fff')); sfx('hit'); }
+  // recoil: nudge + re-randomize velocity a touch
+  c.targets.forEach(tt=>{ const ang=rnd(0,Math.PI*2); const m=Math.hypot(tt.vx,tt.vy); tt.vx=Math.cos(ang)*m; tt.vy=Math.sin(ang)*m*0.6; });
+  if(c.hp<=0){ enemyKilled(); return; }
+  if(am && G.raid.mag[G.gear.active]===0) renderCombat();  // just went empty → show RELOAD
+  else updateCombatHUD();
+}
+function spawnHitText(x,y,txt,color,big){
+  const a=$('arena'); if(!a)return;
+  const d=document.createElement('div');
+  d.textContent=txt; d.style.cssText=`position:absolute;left:${x}%;top:${y}%;transform:translate(-50%,-50%);color:${color};font-weight:bold;font-size:${big?22:13}px;pointer-events:none;text-shadow:0 0 ${big?8:3}px #000;z-index:5`;
+  a.appendChild(d);
+  if(big){ d.style.animation='critpop .6s forwards'; setTimeout(()=>d.remove(),620); }
+  else { d.style.transition='.5s'; requestAnimationFrame(()=>{ d.style.top=(y-12)+'%'; d.style.opacity='0'; }); setTimeout(()=>d.remove(),520); }
+}
+function missShot(e){
+  // clicking empty space still fires a round — misses burn ammo so you can run dry
+  const c=G.raid?.combat; if(!c||c.over||c.lootGrab)return;
+  if(consumeRound()){
+    const a=$('arena');
+    if(a){ const rect=a.getBoundingClientRect&&a.getBoundingClientRect();
+      let x=50,y=50;
+      if(rect&&rect.width){ x=clamp((e.clientX-rect.left)/rect.width*100,2,98); y=clamp((e.clientY-rect.top)/rect.height*100,2,98); }
+      spawnHitText(x,y,'miss','var(--dim)');
+    }
+    updateCombatHUD();
+  }
+}
+function enemyShoots(){
+  const c=G.raid?.combat; if(!c)return;
+  const roll=Math.random();
+  const part = roll<0.14?'head' : roll<0.62?'body' : 'limb';
+  const yourMit = part==='head'? clamp(G.gear.helmet.cls*0.12,0,0.70)
+               : part==='body'? clamp(G.gear.armor.cls*0.11,0,0.66) : 0.10;
+  const partW = part==='head'?1.7 : part==='body'?1.0 : 0.5;
+  let dmg=clamp(c.dmg*partW*rnd(0.8,1.2)*(1-yourMit), 3, 90);
+  G.raid.hp-=dmg;
+  // chance to inflict a bleed — needs a bandage or it drains you
+  let bled=false;
+  if(Math.random() < (c.bleed||0)*(part==='head'?0.6:1)){ G.raid.bleed=(G.raid.bleed||0)+1; bled=true; }
+  const f=$('flash'); if(f){ f.style.opacity='.6'; setTimeout(()=>{if(f)f.style.opacity='0';},120); }
+  pushLog(`${c.name} hit your ${part} for ${Math.round(dmg)}.${bled?' <span style="color:var(--danger)">You are bleeding!</span>':''}`);
+  if(G.raid.hp<=0){ closeCombat(); playerDie(`${c.name} put you down.`); return; }
+  c.aggro=100; spawnTargets(); renderCombat();
+}
+function enemyKilled(){
+  const c=G.raid.combat; c.over=true; c.killedCount++; G.stats.kills++;
+  sfx('kill'); shake('.arena',9);
+  const loc=G.raid.loc.id; G.progress.kills++; G.progress.killsAt[loc]=(G.progress.killsAt[loc]||0)+1;
+  // weapon mastery XP for the gun in hand
+  const wn=activeWeapon()?.name;
+  if(wn){ const before=gunLevel(wn); G.gunLevels[wn]=(G.gunLevels[wn]||0)+1;
+    if(gunLevel(wn)>before && gunLevel(wn)<=6) toast(`★ ${wn} reached Level ${gunLevel(wn)}`,'var(--gold)'); }
+  const more=c.killedCount<c.squadSize;
+  pushLog(`<b style="color:var(--good)">${c.name} down (${c.killedCount}/${c.squadSize}).</b> ${more?'Grab loot — more incoming!':'Squad cleared. Loot the bodies!'}`);
+  const items=[];
+  // guaranteed: the enemy's gun
+  const gun=WPN_BY_NAME[c.gun]||WEAPONS[0];
+  items.push({kind:'weapon',name:gun.name,value:gun.val,tier:'rare',data:{...gun},x:rnd(20,80),y:rnd(24,72),taken:false});
+  const n=ri(1,3);
+  for(let k=0;k<n;k++){ const it=rollLoot(G.raid.loc.lootBias, G.raid.depth/30+0.6); items.push({...it,x:rnd(18,82),y:rnd(24,74),taken:false}); }
+  c.lootGrab={items,left:more?3.4:4.8}; renderCombat();
+}
+function grabLoot(e,i){
+  e.stopPropagation();
+  const lg=G.raid?.combat?.lootGrab; if(!lg)return;
+  const it=lg.items[i]; if(!it||it.taken)return;
+  if(!addCarried(it)){ toast('Backpack full','var(--danger)'); sfx('err'); pushLog(`<span class="muted">Backpack full — couldn't carry ${it.name}.</span>`); return; }
+  it.taken=true; sfx('cash'); juiceLoot(it);
+  if(it.kind==='key') pushLog(`<b style="color:var(--gold)">★ KEYCARD looted from body ★</b>`);
+  else pushLog(`Grabbed <span style="color:${TIERS[it.tier].color}">${(it.kind==='ammo'||it.kind==='med')&&it.count>1?it.name+' ×'+it.count:it.name}</span> (+${fmt(it.value)}₽)`);
+  if(lg.items.every(x=>x.taken)) nextEnemyOrEnd(); else renderCombat();
+}
+// auto-loot: grab the next dropped item (used by the Auto-Loot upgrade)
+function autoGrabNext(){
+  const lg=G.raid?.combat?.lootGrab; if(!lg)return;
+  const i=lg.items.findIndex(x=>!x.taken); if(i<0)return;
+  const it=lg.items[i];
+  if(addCarried(it)){ sfx('cash'); juiceLoot(it); pushLog(`Auto-grabbed <span style="color:${TIERS[it.tier].color}">${it.name}</span> (+${fmt(it.value)}₽)`); }
+  it.taken=true;   // mark taken either way so it doesn't loop on a full bag
+  if(lg.items.every(x=>x.taken)) nextEnemyOrEnd(); else renderCombat();
+}
+// after a body is looted (or the grab window times out), bring the next squad member or end the fight
+function nextEnemyOrEnd(){
+  const c=G.raid&&G.raid.combat; if(!c)return;
+  c.lootGrab=null;
+  if(c.killedCount<c.squadSize){ spawnEnemy(c); pushLog(`<b style="color:var(--danger)">Next hostile engages!</b>`); renderCombat(); }
+  else closeCombat();
+}
+function closeCombat(){ if(G.raid)G.raid.combat=null; const ov=$('combat-ov'); if(ov)ov.remove(); render(); }
+
+/* ============================================================
+   GAME LOOP
+   ============================================================ */
+function tick(){
+  const now=Date.now(); const dt=Math.min(0.05,(now-lastTick)/1000); lastTick=now;
+
+  if(G.raid && G.raid.scavCooldown>0){
+    G.raid.scavCooldown=Math.max(0,G.raid.scavCooldown-dt);
+    if(G.raid.scavCooldown===0 && !G.raid.combat){ const b=$('scavBtn'); if(b){b.disabled=false;b.classList.add('blink');b.textContent='⛏ SCAVENGE';} }
+  }
+
+  // bleeding drains HP over time until bandaged — can kill you
+  if(G.raid && G.raid.alive && (G.raid.bleed||0)>0){
+    G.raid.hp -= G.raid.bleed*1.7*dt;
+    if(G.raid.hp<=0){
+      if(G.raid.combat) closeCombat();
+      playerDie('You bled out.');
+    } else {
+      const yh=$('yourHp'); if(yh){ yh.textContent=Math.round(G.raid.hp); yh.style.color=G.raid.hp<35?'var(--danger)':'var(--good)'; }
+      const rb=$('raidHpBar'), rt=$('raidHpTxt');
+      if(rb){ rb.style.width=clamp(G.raid.hp,0,100)+'%'; rb.style.background=G.raid.hp<35?'var(--danger)':'var(--good)'; }
+      if(rt){ rt.textContent=Math.round(G.raid.hp)+'/'+G.raid.maxHp; rt.style.color=G.raid.hp<35?'var(--danger)':'var(--good)'; }
+    }
+  }
+
+  const c=G.raid&&G.raid.combat;
+  if(c && !c.over){
+    // move targets (continuous aim challenge)
+    for(const t of c.targets){
+      t.x+=t.vx*dt; t.y+=t.vy*dt;
+      if(t.x<8){t.x=8;t.vx=Math.abs(t.vx);} if(t.x>92){t.x=92;t.vx=-Math.abs(t.vx);}
+      if(t.y<12){t.y=12;t.vy=Math.abs(t.vy);} if(t.y>86){t.y=86;t.vy=-Math.abs(t.vy);}
+      const el=$('tgt'+t.id); if(el){ el.style.left=t.x+'%'; el.style.top=t.y+'%'; }
+    }
+    // enemy aim
+    c.aggro-=c.aggroSpeed*dt;
+    if(c.aggro<=0){ enemyShoots(); }
+    else { const ab=$('aimBar'); if(ab)ab.style.width=clamp(c.aggro,0,100)+'%';
+           const at=$('aimTxt'); if(at){ at.textContent='ENEMY AIM '+Math.round(c.aggro)+'%'; at.style.color=c.aggro<35?'var(--danger)':'var(--warn)'; }
+           const ab2=$('aimBar'); if(ab2)ab2.style.background=c.aggro<35?'var(--danger)':'var(--warn)'; }
+  }
+  if(c && c.lootGrab){
+    c.lootGrab.left-=dt; const g=$('grabTxt'); if(g)g.textContent='GRAB LOOT — '+Math.max(0,c.lootGrab.left).toFixed(1)+'s';
+    if(c.lootGrab.left<=0) nextEnemyOrEnd();
+  }
+
+  // ---- AUTOMATION: run the raid loop for you ----
+  if(G.raid && G.raid.alive){
+    const cc=G.raid.combat;
+    if(cc && !cc.over && !cc.lootGrab){
+      if(autoLvl('reload')>0 && G.raid.mag[G.gear.active]<=0){
+        cc.reloadT=(cc.reloadT||0)+dt; if(cc.reloadT>=0.8){ cc.reloadT=0; reloadActive(); }
+      }
+    } else if(cc && cc.lootGrab && autoLvl('loot')>0){
+      cc.lootGrab.autoT=(cc.lootGrab.autoT||0)+dt; if(cc.lootGrab.autoT>=0.3){ cc.lootGrab.autoT=0; autoGrabNext(); }
+    } else if(!cc){
+      if(autoLvl('extract')>0 && G.raid.carriedVal>0 && (currentDeathChance()*100>=G.autoExtractRisk || carriedPoints()>=carryCapacity())){
+        extract();
+      } else if(autoLvl('scav')>0 && G.raid.scavCooldown<=0){
+        G.raid.autoScavT=(G.raid.autoScavT||0)+dt;
+        if(G.raid.autoScavT>=autoScavInterval()){ G.raid.autoScavT=0; scavenge(); }
+      }
+    }
+  }
+
+  let changed=false;
+  for(const r of G.raiders){ if(r.status==='raiding'&&now>=r.returnAt){ resolveRaider(r); changed=true; } }
+  if(processBase(now)) changed=true;
+  const baseOpen=!!document.getElementById('base-ov');
+  if(baseOpen) updateBaseTimers(now);   // live countdowns without rebuilding (keeps dropdowns intact)
+  if(!G.raid){
+    if(changed){ baseOpen?openBase():render(); }
+    else if(!baseOpen && (!tick._last || now-tick._last>1000)){ tick._last=now; if(!document.querySelector('.overlay')) renderHub(); }
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+load();
+initTraders();
+render();
+requestAnimationFrame(tick);
+setInterval(save,5000);
+window.addEventListener('beforeunload',save);
+</script>
+</body>
+</html>

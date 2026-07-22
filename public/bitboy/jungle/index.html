@@ -11,8 +11,11 @@
 </head>
 <body>
 <canvas id="c"></canvas>
+<script src="/arcade-leaderboard.js?v=2"></script>
 <script>
 "use strict";
+function lbActive(){ return window.ArcadeLB && ArcadeLB.active; }
+try { window.ArcadeLB && ArcadeLB.refresh('jungle'); } catch(e){} // warm the global HI
 const cv = document.getElementById('c');
 const ctx = cv.getContext('2d');
 
@@ -20,6 +23,7 @@ const ctx = cv.getContext('2d');
 const VW = 164, VH = 144;
 const GROUND = 116;      // ground surface y
 const PW = 9, PH = 15;   // player size
+const GHEAD = GROUND-4;  // top of a gator's back (a stepping stone)
 
 function fit(){
   const w = cv.clientWidth, h = cv.clientHeight;
@@ -32,71 +36,120 @@ window.addEventListener('resize', fit); fit();
 
 // ── input ──
 const keys = {};
-function isJump(k){ return k==='ArrowUp'||k==='Enter'||k===' '||k==='z'||k==='x'; }
+let jumpPrev = false;
 addEventListener('keydown', e=>{
   keys[e.key] = true;
   if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+  if(lbActive()) return; // leaderboard overlay owns the keys
   if(state==='title' && (e.key==='Enter'||e.key===' '||e.key==='x')) start(1,0,3);
   else if(state==='over' && (e.key==='Enter'||e.key===' '||e.key==='x')) start(1,0,3);
 });
 addEventListener('keyup', e=>{ keys[e.key]=false; });
+function jumpDown(){ return keys['ArrowUp']||keys['Enter']||keys[' ']||keys['z']||keys['x']; }
 
 // ── game state ──
 let state='title';          // title | play | clear | over
-let level, score, lives, timeLeft, level_t;
+let level, score, lives, timeLeft, level_t, farthest;
 let player, cameraX, lvl, banner, blink;
 
-// simple seeded-ish RNG isn't needed — plain Math.random per level = fresh RNG each time
+// fresh Math.random per level = a new layout every run
 function genLevel(n){
-  const length = 1200 + n*360;
-  const pits=[], logs=[], scorps=[], golds=[];
-  const maxPit = 20 + Math.min(16, n*2);
-  let x = 190;
-  while(x < length - 170){
-    const gap = Math.max(34, 78 - n*4) + Math.random()*46;
-    const r = Math.random();
-    if(r < 0.34){                       // PIT
-      const w = 16 + Math.random()*(maxPit-16);
-      pits.push({x0:x, x1:x+w});
-      if(Math.random()<0.45) golds.push({x:x+w/2-4, y:GROUND-34, r:5, got:false});
-      x += w + gap;
-    } else if(r < 0.58){                // LOG
-      logs.push({x:x, spin:Math.random()*7});
-      x += 16 + gap;
-    } else if(r < 0.80){                // SCORPION
-      const span = 16 + Math.random()*18;
-      scorps.push({cx:x, span, x:x, dir:1, v:0.35 + n*0.04});
-      x += span + gap;
-    } else {                            // GOLD run
-      const cnt = 1 + (Math.random()*3|0);
-      for(let i=0;i<cnt;i++) golds.push({x:x+i*13, y:GROUND-13, r:5, got:false});
-      x += cnt*13 + gap;
+  const length = 1300 + n*380;
+  const L = {length, pits:[], logs:[], scorps:[], golds:[], vines:[],
+             boulders:[], snakes:[], coconuts:[], bats:[], tars:[],
+             flames:[], spikes:[], platforms:[], spiders:[]};
+  const maxPit = 18 + Math.min(14, n*2);
+  // weighted grab-bag of things to deal with
+  const table = [
+    ['pit',12],['log',9],['scorp',9],['gatorHop',10],['gatorVine',6],
+    ['piranha',6],['boulder',7],['snake',9],['coconut',6],['bat',6],
+    ['tar',6],['flame',6],['spike',8],['platform',6],['spider',6],['gold',9]
+  ];
+  const tot = table.reduce((a,b)=>a+b[1],0);
+  const pick = ()=>{ let r=Math.random()*tot; for(const [k,w] of table){ if((r-=w)<0) return k; } return 'gold'; };
+
+  let x = 200;
+  while(x < length - 210){
+    const gap = Math.max(32, 74 - n*3) + Math.random()*44;
+    switch(pick()){
+      case 'pit': {
+        const w = 16 + Math.random()*(maxPit-16);
+        L.pits.push({x0:x, x1:x+w, water:false});
+        if(Math.random()<0.4) L.golds.push({x:x+w/2-4, y:GROUND-34, got:false});
+        x += w + gap; break;
+      }
+      case 'log': L.logs.push({x, spin:Math.random()*7}); x += 16 + gap; break;
+      case 'scorp': {
+        const span = 16 + Math.random()*18;
+        L.scorps.push({cx:x, span, x, dir:1, v:0.35 + n*0.04}); x += span + gap; break;
+      }
+      case 'gatorHop': {                 // hop across the gators' backs
+        const gc = 3 + (Math.random()*2|0), sp = 18, w = (gc-1)*sp + 22;
+        const gts=[]; for(let i=0;i<gc;i++) gts.push({x:x+4+i*sp, ph:Math.random()*6.28, open:false});
+        L.pits.push({x0:x, x1:x+w, water:true, gators:gts});
+        x += w + gap + 8; break;
+      }
+      case 'gatorVine': {                // gators below, swing over on a vine
+        const w = 48 + Math.random()*16, gc = 2 + (Math.random()*2|0);
+        const gts=[]; for(let i=0;i<gc;i++) gts.push({x:x+7+i*((w-14)/gc), ph:Math.random()*6.28, open:false});
+        L.pits.push({x0:x, x1:x+w, water:true, gators:gts});
+        L.vines.push({ax:x+w/2, top:22, len:72, amp:0.95, phase:Math.random()*6.28, ang:0, av:0, bx:x+w/2, by:94});
+        x += w + gap + 14; break;
+      }
+      case 'piranha': {                  // no footing — must swing
+        const w = 42 + Math.random()*18;
+        L.pits.push({x0:x, x1:x+w, water:true, gators:[], piranha:true});
+        L.vines.push({ax:x+w/2, top:22, len:72, amp:0.95, phase:Math.random()*6.28, ang:0, av:0, bx:x+w/2, by:94});
+        x += w + gap + 14; break;
+      }
+      case 'boulder': L.boulders.push({home:x+40, x:x+40, v:0.85 + n*0.05}); x += 96 + gap; break;
+      case 'snake':   L.snakes.push({x, ph:Math.random()*6.28}); x += 16 + gap; break;
+      case 'coconut': L.coconuts.push({x0:x, x1:x+42, timer:0.7, drops:[]}); x += 42 + gap; break;
+      case 'bat':     L.bats.push({cx:x+22, span:18, ph:Math.random()*6.28, x:x+22, y:GROUND-22}); x += 48 + gap; break;
+      case 'tar':     { const w=18+Math.random()*10; L.tars.push({x0:x, x1:x+w}); x += w + gap; break; }
+      case 'flame':   L.flames.push({x, ph:Math.random()*2.2, period:2.2, on:false}); x += 16 + gap; break;
+      case 'spike':   { const w=12+Math.random()*10; L.spikes.push({x0:x, x1:x+w}); x += w + gap; break; }
+      case 'platform': {                 // ride a raft across a gap
+        const w = 46 + Math.random()*18;
+        L.pits.push({x0:x, x1:x+w, water:false});
+        L.platforms.push({x:x-2, y:GROUND-3, w:18, min:x-4, max:x+w-14, dir:1, v:0.5 + n*0.03, vx:0});
+        x += w + gap; break;
+      }
+      case 'spider':  L.spiders.push({x, ph:Math.random()*6.28, y:24}); x += 16 + gap; break;
+      default: {
+        const cnt = 1 + (Math.random()*3|0);
+        for(let i=0;i<cnt;i++) L.golds.push({x:x+i*13, y:GROUND-13, got:false});
+        x += cnt*13 + gap;
+      }
     }
   }
-  return {length, pits, logs, scorps, golds, exit:length-46};
+  L.exit = length-46;
+  return L;
 }
 
-function isGap(wx){
-  for(const p of lvl.pits) if(wx>=p.x0 && wx<=p.x1) return true;
-  return false;
-}
+function isGap(wx){ for(const p of lvl.pits) if(wx>=p.x0 && wx<=p.x1) return true; return false; }
 
 function start(n, sc, lv){
   level=n; score=sc; lives=lv;
   lvl = genLevel(n);
   spawn(40);
-  timeLeft = 45 + n*3; level_t = 0;
-  banner = 0; state='play';
+  farthest = 40; // reset per level (not per respawn) so distance isn't re-earned
+  timeLeft = 55 + n*3; level_t = 0;
+  banner = 0; state='play'; jumpPrev = true; // swallow the start-press
 }
 function spawn(x){
-  player = {x, y:GROUND-PH, vx:0, vy:0, onGround:true, face:1, safeX:x, run:0};
+  player = {x, y:GROUND-PH, vx:0, vy:0, onGround:true, face:1, safeX:x, run:0,
+            onVine:null, vineCool:0, onGator:null, onPlat:null, sink:0};
   blink = 70; // brief invulnerability
 }
 function nextLevel(){ start(level+1, score, lives); banner=90; }
 function die(){
   lives--;
-  if(lives<=0){ state='over'; return; }
-  spawn(Math.max(40, player.safeX-14));
+  if(lives<=0){ state='over';
+    if(window.ArcadeLB) ArcadeLB.report('jungle', score);
+    return;
+  }
+  spawn(Math.max(40, player.safeX-14)); // respawn on the last SOLID ground
 }
 
 // ── update ──
@@ -105,7 +158,11 @@ function loop(t){
   requestAnimationFrame(loop);
   if(!last) last=t;
   acc += Math.min(0.05, (t-last)/1000); last=t;
-  while(acc>=STEP){ acc-=STEP; if(state==='play') tick(); }
+  while(acc>=STEP){
+    acc-=STEP;
+    if(state==='play') tick();
+    else if(state==='clear'){ if(banner>0) banner--; else { nextLevel(); break; } }
+  }
   draw();
 }
 function tick(){
@@ -115,62 +172,157 @@ function tick(){
   if(timeLeft<=0){ timeLeft=0; die(); return; }
   if(blink>0) blink--;
   if(banner>0) banner--;
+  if(p.vineCool>0) p.vineCool--;
 
-  // horizontal
-  const run = 1.35;
-  if(keys['ArrowLeft'])  { p.vx=-run; p.face=-1; }
-  else if(keys['ArrowRight']){ p.vx=run; p.face=1; }
-  else p.vx=0;
-  p.x += p.vx;
-  if(p.x<0) p.x=0;
-  if(p.vx!==0) p.run += 0.25;
+  // vines swing (driven pendulum)
+  for(const v of lvl.vines){
+    v.phase += 0.035;
+    v.ang = v.amp*Math.sin(v.phase);
+    v.av  = v.amp*Math.cos(v.phase)*0.035;
+    v.bx  = v.ax + Math.sin(v.ang)*v.len;
+    v.by  = v.top + Math.cos(v.ang)*v.len;
+  }
+  // gator jaws open & shut (mostly shut, staggered)
+  for(const pit of lvl.pits){ if(!pit.water) continue;
+    for(const g of pit.gators) g.open = Math.sin(level_t*1.8 + g.ph) > 0.62;
+  }
+  // rafts drift
+  for(const pl of lvl.platforms){
+    const px=pl.x; pl.x += pl.v*pl.dir;
+    if(pl.x>pl.max){ pl.x=pl.max; pl.dir=-1; }
+    if(pl.x<pl.min){ pl.x=pl.min; pl.dir=1; }
+    pl.vx = pl.x - px;
+  }
 
-  // jump
-  const jump = isJump && (keys['ArrowUp']||keys['Enter']||keys[' ']||keys['z']||keys['x']);
-  if(jump && p.onGround){ p.vy=-3.5; p.onGround=false; }
+  const jn = jumpDown();
+  const jumpPress = jn && !jumpPrev;
+  jumpPrev = jn;
 
-  // gravity
-  p.vy += 0.22; p.y += p.vy;
-
-  // ground / pit
-  const feetX = p.x + PW/2;
-  const overGap = isGap(feetX);
-  if(!overGap && p.y+PH >= GROUND && p.vy>=0){
-    p.y = GROUND-PH; p.vy=0; p.onGround=true; p.safeX=p.x;
+  if(p.onVine){
+    // ── hanging on a vine ──
+    const v = p.onVine;
+    p.x = v.bx - PW/2; p.y = v.by; p.vx=0; p.vy=0; p.onGround=false;
+    if((v.av>0 && v.ang > v.amp*0.68) || jumpPress){
+      p.onVine=null; p.vineCool=18; p.vy=-0.6; p.vx=1.1; p.face=1;
+    }
   } else {
-    p.onGround=false;
-  }
-  if(p.y > VH+16){ die(); return; }   // fell in a pit
+    const feetX0 = p.x + PW/2;
+    const overTar = lvl.tars.some(tr => feetX0>tr.x0 && feetX0<tr.x1);
+    // horizontal
+    const run = overTar ? 0.72 : 1.35;
+    if(keys['ArrowLeft'])       { p.vx=-run; p.face=-1; }
+    else if(keys['ArrowRight']) { p.vx= run; p.face= 1; }
+    else if(p.onGround)         { p.vx=0; }
+    else                        { p.vx *= 0.985; } // keep launch momentum airborne
+    p.x += p.vx;
+    if(p.onPlat) p.x += p.onPlat.vx;   // ride the raft
+    if(p.x<0) p.x=0;
+    if(p.vx!==0 && p.onGround) p.run += 0.25;
 
-  // logs (jump over; contact = trip)
-  for(const l of lvl.logs){
-    if(blink<=0 && aabb(p.x,p.y,PW,PH, l.x-6,GROUND-9,12,9)){ die(); return; }
-    l.spin += 0.2;
+    // jump
+    if(jumpPress && p.onGround){ p.vy=-3.5; p.onGround=false; p.onGator=null; p.onPlat=null; p.sink=0; }
+
+    // gravity
+    p.vy += 0.22; p.y += p.vy;
+
+    // ── resolve footing: solid ground, closed gator backs, rafts ──
+    const feetX = p.x + PW/2;
+    const overThisTar = lvl.tars.some(tr => feetX>tr.x0 && feetX<tr.x1);
+    let support = isGap(feetX) ? null : GROUND, gRef=null, plRef=null;
+    for(const pit of lvl.pits){ if(!pit.water) continue;
+      for(const g of pit.gators){
+        if(!g.open && feetX>g.x && feetX<g.x+16 && (support===null || GHEAD<support)){ support=GHEAD; gRef=g; plRef=null; }
+      }
+    }
+    for(const pl of lvl.platforms){
+      if(feetX>pl.x && feetX<pl.x+pl.w && (support===null || pl.y<support)){ support=pl.y; plRef=pl; gRef=null; }
+    }
+
+    if(overThisTar && support===GROUND && p.vy>=0 && p.y+PH>=GROUND){
+      // quicksand — you sink unless you jump clear
+      p.sink += 0.32;
+      if(p.sink > 16){ die(); return; }
+      p.y = GROUND-PH+p.sink; p.vy=0; p.onGround=true; p.onGator=null; p.onPlat=null;
+    } else if(support!==null && p.vy>=0 && p.y+PH>=support){
+      p.y=support-PH; p.vy=0; p.onGround=true; p.onGator=gRef; p.onPlat=plRef;
+      if(!gRef && !plRef){ p.safeX=p.x; p.sink=0; }
+    } else {
+      p.onGround=false; p.onGator=null; p.onPlat=null;
+    }
+
+    // grab a swinging vine when airborne & near its handle
+    if(!p.onGround && p.vineCool<=0){
+      for(const v of lvl.vines){
+        const dx=(p.x+PW/2)-v.bx, dy=(p.y+4)-v.by;
+        if(dx*dx+dy*dy < 18*18){ p.onVine=v; p.vy=0; break; }
+      }
+    }
+
+    if(p.y > VH+16){ die(); return; }   // fell in a pit / pond
   }
+
+  const hit = (bx,by,bw,bh)=> !p.onVine && blink<=0 && aabb(p.x,p.y,PW,PH, bx,by,bw,bh);
+
+  // logs
+  for(const l of lvl.logs){ if(hit(l.x-6,GROUND-9,12,9)){ die(); return; } l.spin += 0.2; }
   // scorpions
   for(const s of lvl.scorps){
     s.x += s.v*s.dir;
-    if(s.x > s.cx + s.span){ s.x=s.cx+s.span; s.dir=-1; }
-    if(s.x < s.cx - s.span){ s.x=s.cx-s.span; s.dir=1; }
-    if(blink<=0 && aabb(p.x,p.y,PW,PH, s.x-5,GROUND-7,10,7)){ die(); return; }
+    if(s.x > s.cx+s.span){ s.x=s.cx+s.span; s.dir=-1; }
+    if(s.x < s.cx-s.span){ s.x=s.cx-s.span; s.dir=1; }
+    if(hit(s.x-5,GROUND-7,10,7)){ die(); return; }
+  }
+  // rolling boulders (a local gauntlet)
+  for(const b of lvl.boulders){
+    if(Math.abs(player.x-b.home) < 150){
+      b.x -= b.v; if(b.x < b.home-70) b.x = b.home+70;
+      if(hit(b.x-7,GROUND-14,14,14)){ die(); return; }
+    }
+  }
+  // snakes
+  for(const s of lvl.snakes){ if(hit(s.x-4,GROUND-12,9,12)){ die(); return; } }
+  // spikes
+  for(const sp of lvl.spikes){ if(hit(sp.x0,GROUND-7,sp.x1-sp.x0,7)){ die(); return; } }
+  // flame jets
+  for(const f of lvl.flames){
+    f.on = ((level_t+f.ph) % f.period) < 0.9;
+    if(f.on && hit(f.x-4,GROUND-20,9,20)){ die(); return; }
+  }
+  // bats (swoop in a bobbing patrol)
+  for(const b of lvl.bats){
+    b.x = b.cx + Math.sin(level_t*1.4+b.ph)*b.span;
+    b.y = GROUND-22 + Math.sin(level_t*2.0+b.ph)*16;
+    if(hit(b.x-5,b.y-4,10,8)){ die(); return; }
+  }
+  // spiders (drop from the canopy on a thread)
+  for(const s of lvl.spiders){
+    s.y = 22 + (Math.sin(level_t*1.3+s.ph)*0.5+0.5)*(GROUND-34);
+    if(hit(s.x-3,s.y-3,7,8)){ die(); return; }
+  }
+  // falling coconuts
+  for(const z of lvl.coconuts){
+    if(player.x>z.x0-90 && player.x<z.x1+50){
+      z.timer -= STEP;
+      if(z.timer<=0){ z.timer=0.9+Math.random()*0.7; z.drops.push({x:z.x0+Math.random()*(z.x1-z.x0), y:16, vy:1.0}); }
+      for(const d of z.drops){ d.vy+=0.14; d.y+=d.vy; }
+      z.drops = z.drops.filter(d=>d.y<GROUND+4);
+      for(const d of z.drops){ if(hit(d.x-4,d.y-4,8,8)){ die(); return; } }
+    }
   }
   // gold
-  for(const g of lvl.golds){
-    if(!g.got && aabb(p.x,p.y,PW,PH, g.x,g.y,9,9)){ g.got=true; score+=100; }
-  }
-  // reached exit
-  if(p.x > lvl.exit){ state='clear'; banner=70; }
-
+  for(const g of lvl.golds){ if(!g.got && aabb(p.x,p.y,PW,PH, g.x,g.y,9,9)){ g.got=true; score+=100; } }
+  // exit
+  if(p.x > lvl.exit){ state='clear'; banner=70; score += 300; } // level-clear bonus
+  // distance score — every run earns points, so the leaderboard reliably triggers
+  const fx = Math.floor(p.x);
+  if(fx > farthest){ score += Math.ceil((fx - farthest)/2); farthest = fx; }
   // camera
   cameraX = Math.max(0, Math.min(lvl.length-VW, p.x - VW*0.4));
 }
-function aabb(ax,ay,aw,ah, bx,by,bw,bh){
-  return ax<bx+bw && ax+aw>bx && ay<by+bh && ay+ah>by;
-}
+function aabb(ax,ay,aw,ah, bx,by,bw,bh){ return ax<bx+bw && ax+aw>bx && ay<by+bh && ay+ah>by; }
 
 // ── draw ──
 function draw(){
-  // sky
   const g = ctx.createLinearGradient(0,0,0,VH);
   g.addColorStop(0,'#153a29'); g.addColorStop(1,'#0a1c14');
   ctx.fillStyle=g; ctx.fillRect(0,0,VW,VH);
@@ -179,91 +331,175 @@ function draw(){
 
   ctx.save();
   ctx.translate(-Math.round(cameraX),0);
-
-  // parallax trees
   drawTrees();
 
-  // ground strip
   const cLeft = cameraX-10, cRight = cameraX+VW+10;
-  ctx.fillStyle='#5a3a1e';
-  ctx.fillRect(cLeft, GROUND, cRight-cLeft, VH-GROUND);
-  ctx.fillStyle='#3fa35a';
-  ctx.fillRect(cLeft, GROUND, cRight-cLeft, 3);
-  // dirt speckle
+  ctx.fillStyle='#5a3a1e'; ctx.fillRect(cLeft, GROUND, cRight-cLeft, VH-GROUND);
+  ctx.fillStyle='#3fa35a'; ctx.fillRect(cLeft, GROUND, cRight-cLeft, 3);
   ctx.fillStyle='rgba(0,0,0,0.18)';
   for(let x=Math.floor(cLeft/12)*12; x<cRight; x+=12) ctx.fillRect(x, GROUND+8, 3, 3);
 
-  // pits (punch holes)
+  for(const tr of lvl.tars) drawTar(tr);
+
   for(const p of lvl.pits){
-    ctx.fillStyle='#0a1c14'; ctx.fillRect(p.x0, GROUND, p.x1-p.x0, VH-GROUND);
-    ctx.fillStyle='#241a10';
-    ctx.fillRect(p.x0-2, GROUND, 2, VH-GROUND);
-    ctx.fillRect(p.x1, GROUND, 2, VH-GROUND);
+    if(p.water){
+      ctx.fillStyle='#08181f'; ctx.fillRect(p.x0, GROUND, p.x1-p.x0, VH-GROUND);
+      ctx.fillStyle='#1f6f8b'; ctx.fillRect(p.x0, GROUND+2, p.x1-p.x0, VH-GROUND-2);
+      ctx.fillStyle='#3fa7c0';
+      for(let x=p.x0;x<p.x1;x+=8){ const yo=Math.sin(level_t*3+x)*0.9; ctx.fillRect(x+2, GROUND+3+yo, 4, 1); }
+      if(p.piranha){
+        for(let i=0;i<4;i++){ const fx=p.x0+6+i*11+Math.sin(level_t*2+i)*3;
+          ctx.fillStyle='#e23b5a'; ctx.fillRect(fx, GROUND+6, 3, 2);
+          ctx.fillStyle='#0d0'; ctx.fillRect(fx+1, GROUND+5, 1, 1); }
+      }
+      for(const g of p.gators) drawGator(g);
+      ctx.fillStyle='#241a10'; ctx.fillRect(p.x0-2, GROUND, 2, VH-GROUND); ctx.fillRect(p.x1, GROUND, 2, VH-GROUND);
+    } else {
+      ctx.fillStyle='#0a1c14'; ctx.fillRect(p.x0, GROUND, p.x1-p.x0, VH-GROUND);
+      ctx.fillStyle='#241a10'; ctx.fillRect(p.x0-2, GROUND, 2, VH-GROUND); ctx.fillRect(p.x1, GROUND, 2, VH-GROUND);
+    }
   }
 
-  // gold
+  for(const pl of lvl.platforms) drawPlatform(pl);
+  for(const v of lvl.vines) drawVine(v);
+  for(const sp of lvl.spikes) drawSpikes(sp);
+  for(const l of lvl.logs) drawLog(l.x, GROUND-9, l.spin);
+  for(const s of lvl.snakes) drawSnake(s);
+  for(const b of lvl.boulders) if(Math.abs(player.x-b.home)<150) drawBoulder(b);
+  for(const f of lvl.flames) drawFlame(f);
+  for(const s of lvl.scorps) drawScorpion(s.x, GROUND-7, s.dir);
+  for(const b of lvl.bats) drawBat(b);
+  for(const s of lvl.spiders) drawSpider(s);
+  for(const z of lvl.coconuts) for(const d of z.drops) drawCoconut(d);
+
   for(const g of lvl.golds){ if(g.got) continue;
     ctx.fillStyle='#ffd23f'; ctx.fillRect(g.x, g.y, 9, 6);
     ctx.fillStyle='#c99a12'; ctx.fillRect(g.x, g.y+6, 9, 2);
     ctx.fillStyle='#fff2b0'; ctx.fillRect(g.x+1, g.y+1, 3, 1);
   }
-
-  // logs
-  for(const l of lvl.logs) drawLog(l.x, GROUND-9, l.spin);
-  // scorpions
-  for(const s of lvl.scorps) drawScorpion(s.x, GROUND-7, s.dir);
-  // exit flag
   drawFlag(lvl.exit, GROUND);
-
-  // player
   drawPlayer();
-
   ctx.restore();
 
-  // HUD + overlays (screen space)
   hud();
   if(banner>0 && state==='play'){ centerText('LEVEL '+level, '#ffd23f'); }
-  if(state==='clear') centerText('LEVEL CLEAR', '#7bd88f', ()=>{ if(banner<=0) nextLevel(); });
-  if(state==='over')  centerText('GAME OVER', '#ff7a7a', null, 'PRESS  A');
+  if(state==='clear') centerText('LEVEL CLEAR', '#7bd88f');
+  if(state==='over')  centerText('GAME OVER', '#ff7a7a', 'PRESS  A');
 }
 
 function drawPlayer(){
   const p=player;
-  if(blink>0 && (Math.floor(blink/4)%2)) return; // blink while invuln
-  const x=Math.round(p.x), y=Math.round(p.y), f=p.face;
-  // legs
+  if(blink>0 && (Math.floor(blink/4)%2)) return;
+  const x=Math.round(p.x), y=Math.round(p.y), f=p.face, swing=!!p.onVine;
   ctx.fillStyle='#2b3a66';
   const stepA = (!p.onGround) ? 2 : (Math.floor(p.run)%2? 3 : -1);
-  ctx.fillRect(x+1, y+11, 3, 4);
-  ctx.fillRect(x+5, y+11, 3, 4);
+  ctx.fillRect(x+1, y+11, 3, 4); ctx.fillRect(x+5, y+11, 3, 4);
   if(p.onGround && p.vx!==0){ ctx.fillRect(x+1+stepA, y+13, 3, 2); }
-  // torso (green shirt)
   ctx.fillStyle='#2ec07a'; ctx.fillRect(x+1, y+6, 7, 6);
-  // arms
-  ctx.fillStyle='#e6b58c'; ctx.fillRect(f>0? x+7 : x-0, y+6, 2, 4);
-  // head
+  ctx.fillStyle='#e6b58c';
+  if(swing){ ctx.fillRect(x+1, y+1, 2, 5); ctx.fillRect(x+6, y+1, 2, 5); }
+  else     { ctx.fillRect(f>0? x+7 : x-0, y+6, 2, 4); }
   ctx.fillStyle='#e6b58c'; ctx.fillRect(x+2, y, 5, 6);
-  // hair
   ctx.fillStyle='#3a2a18'; ctx.fillRect(x+2, y, 5, 2);
-  // eye
   ctx.fillStyle='#12241a'; ctx.fillRect(f>0? x+5 : x+2, y+3, 1, 1);
+}
+function drawGator(g){
+  const x=g.x, open=g.open;
+  ctx.fillStyle='#2f5c2c'; ctx.fillRect(x, GROUND, 16, 3);          // submerged
+  ctx.fillStyle='#3f7a3a'; ctx.fillRect(x, GHEAD, 16, 4);           // standable back
+  ctx.fillStyle='#4f9146';
+  ctx.fillRect(x+3, GHEAD-2, 2, 2); ctx.fillRect(x+8, GHEAD-2, 2, 2); ctx.fillRect(x+12, GHEAD-2, 2, 2);
+  ctx.fillStyle='#3f7a3a'; ctx.fillRect(x+13, GHEAD-2, 3, 2);       // eye bump
+  ctx.fillStyle='#ffe14d'; ctx.fillRect(x+14, GHEAD-2, 1, 1);
+  if(open){
+    ctx.fillStyle='#7a1f16'; ctx.fillRect(x-6, GHEAD-2, 6, 6);      // gaping maw
+    ctx.fillStyle='#f2e9d0'; ctx.fillRect(x-6, GHEAD-2, 6, 1); ctx.fillRect(x-6, GHEAD+3, 6, 1);
+  } else {
+    ctx.fillStyle='#3f7a3a'; ctx.fillRect(x-5, GHEAD+1, 6, 3);      // shut snout
+    ctx.fillStyle='#2f5c2c'; ctx.fillRect(x-5, GHEAD+3, 6, 1);
+  }
+}
+function drawVine(v){
+  ctx.strokeStyle='#5f7a2e'; ctx.lineWidth=2; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(v.ax, v.top); ctx.lineTo(v.bx, v.by); ctx.stroke();
+  ctx.strokeStyle='#4a6323'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(v.ax, v.top); ctx.lineTo(v.bx, v.by); ctx.stroke();
+  ctx.fillStyle='#2f6b3a'; ctx.fillRect(v.ax-6, v.top-3, 12, 4);
+  ctx.fillStyle='#3fa35a'; ctx.fillRect((v.ax+v.bx)/2-1, (v.top+v.by)/2, 3, 2);
+  ctx.fillStyle='#7a5a2a'; ctx.fillRect(v.bx-2, v.by-1, 4, 4);
+  ctx.fillStyle='#3fa35a'; ctx.fillRect(v.bx+1, v.by-3, 2, 2);
+}
+function drawPlatform(pl){
+  ctx.fillStyle='#6b4420'; ctx.fillRect(pl.x, pl.y, pl.w, 5);
+  ctx.fillStyle='#8a5a2a'; ctx.fillRect(pl.x, pl.y, pl.w, 2);
+  ctx.fillStyle='#3fa35a'; ctx.fillRect(pl.x+2, pl.y-2, pl.w-4, 2);
+  ctx.fillStyle='#4a3016'; ctx.fillRect(pl.x+4, pl.y+2, 1, 3); ctx.fillRect(pl.x+11, pl.y+2, 1, 3);
+}
+function drawSpikes(sp){
+  ctx.fillStyle='#b9c0c6';
+  for(let x=sp.x0; x<sp.x1; x+=4){
+    ctx.beginPath(); ctx.moveTo(x, GROUND); ctx.lineTo(x+2, GROUND-7); ctx.lineTo(x+4, GROUND); ctx.closePath(); ctx.fill();
+  }
+  ctx.fillStyle='#7a8087'; ctx.fillRect(sp.x0, GROUND, sp.x1-sp.x0, 2);
+}
+function drawTar(tr){
+  ctx.fillStyle='#1a1410'; ctx.fillRect(tr.x0, GROUND, tr.x1-tr.x0, 6);
+  ctx.fillStyle='#0d0a08'; ctx.fillRect(tr.x0, GROUND, tr.x1-tr.x0, 2);
+  ctx.fillStyle='#4a3a26';
+  for(let x=tr.x0+3; x<tr.x1; x+=7){ const b=(Math.sin(level_t*4+x)*0.5+0.5)*2; ctx.fillRect(x, GROUND+2-b, 2, 2); }
+}
+function drawBoulder(b){
+  const x=b.x, y=GROUND-7;
+  ctx.fillStyle='#7a7168'; ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle='#5c554d'; const o=Math.floor(b.x/3)%3-1;
+  ctx.fillRect(x-3+o, y-2, 2, 2); ctx.fillRect(x+1+o, y+1, 2, 2);
+  ctx.fillStyle='#9b9186'; ctx.fillRect(x-4, y-4, 2, 2);
+}
+function drawSnake(s){
+  const x=s.x, rear=(Math.sin(level_t*3+s.ph)*0.5+0.5), h=4+rear*5;
+  ctx.fillStyle='#2e7d32'; ctx.fillRect(x-4, GROUND-3, 9, 3);
+  ctx.fillRect(x, GROUND-3-h, 3, h);
+  ctx.fillStyle='#1b5e20'; ctx.fillRect(x-1, GROUND-4-h, 4, 2);
+  ctx.fillStyle='#ffe14d'; ctx.fillRect(x+3, GROUND-3-h, 1, 1);
+  ctx.fillStyle='#e11'; ctx.fillRect(x+3, GROUND-2-h, 2, 1);
+}
+function drawFlame(f){
+  if(!f.on){ ctx.fillStyle='#2a2a2a'; ctx.fillRect(f.x-3, GROUND-2, 8, 2); return; }
+  const flick = Math.sin(level_t*20+f.ph)*1.5;
+  ctx.fillStyle='#ff5a1f'; ctx.fillRect(f.x-3, GROUND-20, 8, 20);
+  ctx.fillStyle='#ffb020'; ctx.fillRect(f.x-1, GROUND-18+flick, 4, 16);
+  ctx.fillStyle='#ffe870'; ctx.fillRect(f.x, GROUND-12, 2, 8);
+}
+function drawBat(b){
+  const x=Math.round(b.x), y=Math.round(b.y), w=(Math.floor(level_t*10)%2)?3:5;
+  ctx.fillStyle='#161616';
+  ctx.fillRect(x-1, y-1, 3, 3);
+  ctx.fillRect(x-2-w, y-2, w, 3); ctx.fillRect(x+2, y-2, w, 3);
+  ctx.fillStyle='#e11'; ctx.fillRect(x, y-1, 1, 1);
+}
+function drawSpider(s){
+  ctx.strokeStyle='#cfd6d0'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(s.x, 0); ctx.lineTo(s.x, s.y-2); ctx.stroke();
+  ctx.fillStyle='#141414'; ctx.fillRect(s.x-3, s.y-2, 7, 5);
+  ctx.fillStyle='#333';
+  ctx.fillRect(s.x-5, s.y-1, 2, 1); ctx.fillRect(s.x+4, s.y-1, 2, 1);
+  ctx.fillRect(s.x-5, s.y+2, 2, 1); ctx.fillRect(s.x+4, s.y+2, 2, 1);
+  ctx.fillStyle='#e11'; ctx.fillRect(s.x-1, s.y-1, 1, 1); ctx.fillRect(s.x+2, s.y-1, 1, 1);
+}
+function drawCoconut(d){
+  ctx.fillStyle='#4a2f18'; ctx.fillRect(d.x-4, d.y-4, 8, 8);
+  ctx.fillStyle='#5a3a1e'; ctx.fillRect(d.x-4, d.y-4, 8, 2);
+  ctx.fillStyle='#3a2410'; ctx.fillRect(d.x-1, d.y-2, 2, 2);
 }
 function drawLog(x,y,spin){
   ctx.fillStyle='#8a5a2a'; ctx.fillRect(x-6, y, 12, 9);
   ctx.fillStyle='#6b4420'; ctx.fillRect(x-6, y, 12, 2);
-  // rolling rings
-  ctx.fillStyle='#c98a4a';
-  const o = Math.floor(spin)%4 - 2;
+  ctx.fillStyle='#c98a4a'; const o=Math.floor(spin)%4-2;
   ctx.fillRect(x-4+o, y+3, 2, 3); ctx.fillRect(x+2+o, y+3, 2, 3);
 }
 function drawScorpion(x,y,dir){
-  ctx.fillStyle='#c0392b';
-  ctx.fillRect(x-5, y+3, 10, 3);       // body
-  ctx.fillRect(x-2, y, 3, 4);          // tail up
-  ctx.fillStyle='#7a1f16';
-  ctx.fillRect(x+ (dir>0?4:-6), y+2, 2, 2); // claw
-  // legs
-  ctx.fillStyle='#7a1f16';
+  ctx.fillStyle='#c0392b'; ctx.fillRect(x-5, y+3, 10, 3); ctx.fillRect(x-2, y, 3, 4);
+  ctx.fillStyle='#7a1f16'; ctx.fillRect(x+(dir>0?4:-6), y+2, 2, 2);
   ctx.fillRect(x-4, y+6, 1, 2); ctx.fillRect(x-1, y+6, 1, 2); ctx.fillRect(x+2, y+6, 1, 2);
 }
 function drawFlag(x,gy){
@@ -272,11 +508,9 @@ function drawFlag(x,gy){
   ctx.fillStyle='#ffd23f'; ctx.fillRect(x+4, gy-28, 3, 3);
 }
 function drawTrees(){
-  // canopy blobs + trunks with 0.5x parallax
-  ctx.fillStyle='#1c4a33';
-  const par = cameraX*0.5;
+  ctx.fillStyle='#1c4a33'; const par=cameraX*0.5;
   for(let i=-1;i<VW/70+2;i++){
-    const sx = cameraX + i*70 - par%70;
+    const sx=cameraX + i*70 - par%70;
     ctx.beginPath(); ctx.arc(sx+30, 30, 22, 0, Math.PI*2); ctx.fill();
     ctx.fillRect(sx+27, 30, 6, 74);
   }
@@ -290,29 +524,32 @@ function hud(){
   ctx.fillStyle = timeLeft<10 ? '#ff7a7a' : '#dfffe0';
   ctx.fillText('T'+Math.ceil(timeLeft), 128, 3);
 }
-function centerText(msg, col, cb, sub){
+function centerText(msg, col, sub){
   ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(0,VH/2-22,VW,44);
   ctx.fillStyle=col; ctx.font='bold 15px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText(msg, VW/2, VH/2-4);
   if(sub){ ctx.fillStyle='#dfffe0'; ctx.font='8px monospace'; ctx.fillText(sub, VW/2, VH/2+12); }
   ctx.textAlign='left';
-  if(cb) cb();
 }
 function titleScreen(){
   drawTrees();
   ctx.fillStyle='#5a3a1e'; ctx.fillRect(0,GROUND,VW,VH-GROUND);
   ctx.fillStyle='#3fa35a'; ctx.fillRect(0,GROUND,VW,3);
   ctx.fillStyle='#ffd23f'; ctx.font='bold 17px monospace'; ctx.textAlign='center';
-  ctx.fillText('JUNGLE RUN', VW/2, 46);
+  ctx.fillText('JUNGLE RUN', VW/2, 40);
   ctx.fillStyle='#7bd88f'; ctx.font='8px monospace';
-  ctx.fillText('a pitfall tribute', VW/2, 62);
-  ctx.fillStyle='#dfffe0'; ctx.font='9px monospace';
-  ctx.fillText('D-PAD move   A jump', VW/2, 88);
-  ctx.fillText('PRESS  A  TO  START', VW/2, 104);
+  ctx.fillText('a pitfall tribute', VW/2, 55);
+  ctx.fillStyle='#dfffe0'; ctx.font='8px monospace';
+  ctx.fillText('D-PAD move    A jump', VW/2, 78);
+  ctx.fillText('hop the gators, swing', VW/2, 90);
+  ctx.fillText('the vines, dodge it all!', VW/2, 100);
+  ctx.fillStyle='#ffd23f';
+  ctx.fillText('PRESS  A  TO  START', VW/2, 116);
+  const hi = window.ArcadeLB && ArcadeLB.top('jungle',1)[0];
+  if(hi){ ctx.fillStyle='#7bd88f'; ctx.font='8px monospace';
+    ctx.fillText('HI '+String(hi.score).padStart(5,'0')+'  '+hi.tag, VW/2, 130); }
   ctx.textAlign='left';
-  // little hero standing
-  const px=VW/2-4;
-  player={x:px,y:GROUND-PH,face:1,onGround:true,vx:0,run:0}; blink=0;
+  player={x:VW/2-4,y:GROUND-PH,face:1,onGround:true,vx:0,run:0,onVine:null}; blink=0;
   drawPlayer();
 }
 requestAnimationFrame(loop);

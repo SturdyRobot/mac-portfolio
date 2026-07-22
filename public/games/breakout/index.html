@@ -14,9 +14,18 @@
   <canvas id="c" width="400" height="300"></canvas>
   <div id="msg">← → or move mouse to play · click to launch</div>
 </div>
+<script src="/arcade-leaderboard.js?v=2"></script>
 <script>
 const cv = document.getElementById('c'), x = cv.getContext('2d')
 const W = cv.width, H = cv.height
+const lbActive = () => window.ArcadeLB && ArcadeLB.active
+let submitted = false
+function endGame(){
+  if(submitted) return; submitted = true
+  const pts = score*10
+  if(window.ArcadeLB) ArcadeLB.report('breakout', pts)
+}
+try { window.ArcadeLB && ArcadeLB.refresh('breakout') } catch(e){}
 let paddle = { w: 60, h: 8, x: W/2 - 30 }
 let ball = { x: W/2, y: H-40, dx: 2.2, dy: -2.2, r: 5, live: false }
 let bricks = [], score = 0, lost = false
@@ -32,9 +41,9 @@ addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft') paddle.x = Math.max(0, paddle.x - 18)
   if (e.key === 'ArrowRight') paddle.x = Math.min(W-paddle.w, paddle.x + 18)
 })
-addEventListener('click', () => { if(lost){reset()} else ball.live = true })
+addEventListener('click', () => { if(lbActive()) return; if(lost){reset()} else ball.live = true })
 function reset(){
-  bricks.forEach(b=>b.on=true); score=0; lost=false
+  bricks.forEach(b=>b.on=true); score=0; lost=false; submitted=false
   ball={x:W/2,y:H-40,dx:2.2,dy:-2.2,r:5,live:false}
 }
 
@@ -63,10 +72,13 @@ function step(){
         b.on=false; ball.dy*=-1; score++
       }
     })
-    if(ball.y>H){ lost=true; ball.live=false }
+    if(ball.y>H){ lost=true; ball.live=false; endGame() }
+    if(score===bricks.length){ endGame() }
   }
   x.font='11px Geneva'; x.fillText('Score: '+score, 8, 14)
-  if(lost){ x.font='16px Geneva'; x.fillText('Game Over — click to retry', 90, H/2) }
+  const hi = window.ArcadeLB && ArcadeLB.top('breakout',1)[0]
+  if(lost){ x.font='16px Geneva'; x.fillText('Game Over — click to retry', 90, H/2)
+    if(hi){ x.font='12px Geneva'; x.fillText('HI '+hi.score+' '+hi.tag, 150, H/2+22) } }
   if(score===bricks.length){ x.font='16px Geneva'; x.fillText('You win! 🎉', 150, H/2) }
   requestAnimationFrame(step)
 }
