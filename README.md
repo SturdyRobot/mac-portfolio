@@ -1,6 +1,8 @@
 # Sturdy Robot — a portfolio built as a working Macintosh
 
-**Live:** [sturdyrobot.io](https://sturdyrobot.io)
+[![CI](https://github.com/SturdyRobot/mac-portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/SturdyRobot/mac-portfolio/actions/workflows/ci.yml)
+
+**Live:** [sturdyrobot.io](https://sturdyrobot.io) · **How it's built:** [AI_SPEC.md](AI_SPEC.md)
 
 A personal portfolio disguised as a fully working **classic Mac OS 8 "Platinum"
 desktop** — draggable windows, a live menu bar, system sounds, theme "flavors",
