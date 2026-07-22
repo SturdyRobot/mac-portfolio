@@ -52,6 +52,17 @@ export const apps = [
     menu: true,
   },
   {
+    id: 'hub',
+    name: 'Projects',
+    category: 'GitHub',
+    icon: '🐙',
+    type: 'iframe', // a fake GitHub profile showcasing the real work
+    src: '/sites/hub/index.html',
+    window: { w: 1000, h: 700, x: 70, y: 40 },
+    onDesktop: true, // the project hub — worth surfacing
+    menu: true,
+  },
+  {
     id: 'sturdyharness',
     name: 'SturdyHarness',
     category: 'GitHub',

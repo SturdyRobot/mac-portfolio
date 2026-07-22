@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Noel Jackson · SturdyRobot</title>
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#161b22; --border:#30363d; --border2:#21262d;
+    --text:#e6edf3; --muted:#8b949e; --link:#2f81f7;
+    --green:#238636; --green-h:#2ea043;
+    --rust:#dea584; --js:#f1e05a; --ts:#3178c6; --react:#61dafb;
+  }
+  *{ box-sizing:border-box }
+  html,body{ margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased }
+  a{ color:var(--link); text-decoration:none }
+  a:hover{ text-decoration:underline }
+
+  /* top nav */
+  .topbar{ display:flex; align-items:center; gap:14px; padding:12px 16px;
+    border-bottom:1px solid var(--border2); background:var(--bg); position:sticky; top:0; z-index:5 }
+  .octo{ font-size:22px }
+  .search{ flex:1; max-width:280px; background:#0d1117; border:1px solid var(--border);
+    border-radius:6px; padding:5px 10px; color:var(--muted); font-size:12px }
+  .topnav{ display:flex; gap:16px; color:var(--text); font-size:14px; margin-left:auto }
+  .topnav span{ color:var(--muted) }
+
+  .wrap{ max-width:1000px; margin:0 auto; padding:20px 16px 60px;
+    display:grid; grid-template-columns:296px minmax(0,1fr); gap:24px }
+  .wrap > *{ min-width:0 }
+
+  /* sidebar */
+  .avatar{ width:210px; height:210px; max-width:100%; border-radius:50%;
+    background:radial-gradient(circle at 38% 32%, #2b3038, #14181e);
+    border:1px solid var(--border); display:grid; place-items:center; font-size:120px }
+  .name{ font-size:24px; font-weight:600; margin:14px 0 0 }
+  .handle{ font-size:20px; font-weight:300; color:var(--muted) }
+  .bio{ margin:14px 0 4px }
+  .btn{ display:block; width:100%; text-align:center; margin:16px 0; padding:6px 12px;
+    background:var(--bg2); border:1px solid var(--border); border-radius:6px;
+    color:var(--text); font-weight:600; font-size:13px; cursor:pointer }
+  .btn:hover{ background:#21262d; text-decoration:none }
+  .btn.follow{ }
+  .meta{ color:var(--muted); font-size:14px }
+  .meta div{ display:flex; align-items:center; gap:8px; margin:6px 0 }
+  .pill{ display:inline-flex; align-items:center; gap:6px; background:rgba(46,160,67,.15);
+    color:#3fb950; border:1px solid rgba(63,185,80,.4); border-radius:999px;
+    padding:2px 10px; font-size:12px; font-weight:600; margin:8px 0 }
+
+  /* main */
+  .readme{ border:1px solid var(--border); border-radius:6px; margin-bottom:26px; overflow:hidden }
+  .readme-head{ background:var(--bg2); border-bottom:1px solid var(--border);
+    padding:8px 16px; font-size:13px; color:var(--muted) }
+  .readme-head b{ color:var(--text); font-weight:600 }
+  .readme-body{ padding:22px 20px }
+  .readme-body h2{ font-size:20px; margin:0 0 6px; border:0 }
+  .readme-body h3{ font-size:15px; margin:20px 0 8px; color:var(--text) }
+  .readme-body p{ color:#c9d1d9; margin:10px 0 }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 4px }
+  .chip{ background:#1f2937; border:1px solid var(--border); color:#cdd9e5;
+    border-radius:999px; padding:3px 11px; font-size:12px }
+  .kv{ color:var(--muted); font-size:13px; margin-top:14px }
+  .kv a{ font-weight:500 }
+
+  .section-title{ font-size:16px; font-weight:600; margin:0 0 12px; display:flex; align-items:center; gap:8px }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px }
+  .repo{ display:block; border:1px solid var(--border); border-radius:6px; padding:16px;
+    background:var(--bg); transition:border-color .15s }
+  .repo:hover{ border-color:#484f58; text-decoration:none }
+  .repo-top{ display:flex; align-items:center; gap:8px; margin-bottom:8px }
+  .repo-name{ color:var(--link); font-weight:600; font-size:14px }
+  .repo:hover .repo-name{ text-decoration:underline }
+  .badge{ font-size:11px; color:var(--muted); border:1px solid var(--border);
+    border-radius:999px; padding:0 7px; line-height:18px; font-weight:500 }
+  .repo-desc{ color:var(--muted); font-size:13px; margin:0 0 14px; min-height:34px }
+  .repo-meta{ display:flex; align-items:center; gap:16px; color:var(--muted); font-size:12px }
+  .lang{ display:inline-flex; align-items:center; gap:6px }
+  .dot{ width:11px; height:11px; border-radius:50%; display:inline-block }
+  .ext{ display:inline-flex; align-items:center; gap:4px }
+
+  /* contributions */
+  .contrib{ margin-top:30px; border:1px solid var(--border); border-radius:6px; padding:16px }
+  .contrib h4{ margin:0 0 12px; font-size:13px; font-weight:400; color:var(--muted) }
+  .graph{ display:grid; grid-auto-flow:column; grid-template-rows:repeat(7,11px); gap:3px; overflow-x:auto; padding-bottom:4px }
+  .cell{ width:11px; height:11px; border-radius:2px; background:#161b22 }
+  .legend{ display:flex; align-items:center; gap:6px; justify-content:flex-end;
+    color:var(--muted); font-size:11px; margin-top:10px }
+
+  .foot{ max-width:1000px; margin:0 auto; padding:0 16px 40px; color:var(--muted); font-size:12px; text-align:center }
+
+  @media (max-width:760px){
+    .wrap{ grid-template-columns:minmax(0,1fr); }
+    .avatar{ width:120px; height:120px; font-size:64px }
+    .grid{ grid-template-columns:1fr }
+    .topnav{ display:none }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="octo">🐙</span>
+    <div class="search">Search or jump to…</div>
+    <nav class="topnav"><span>Pull requests</span><span>Issues</span><span>Marketplace</span><span>Explore</span></nav>
+  </div>
+
+  <div class="wrap">
+    <!-- ── profile sidebar ── -->
+    <aside>
+      <div class="avatar">🤖</div>
+      <div class="name">Noel Jackson</div>
+      <div class="handle">SturdyRobot</div>
+      <button class="btn follow" onclick="this.textContent='Following ✓'">Follow</button>
+      <p class="bio">Software developer &amp; systems admin. I build apps, tools, and games — and direct AI to help me ship them.</p>
+      <span class="pill">🟢 Available for work</span>
+      <div class="meta">
+        <div>📍 On the internet</div>
+        <div>🔗 <a href="https://sturdyrobot.io" target="_blank" rel="noopener noreferrer">sturdyrobot.io</a></div>
+        <div>✉️ <a href="mailto:noeljacksonjs@gmail.com">noeljacksonjs@gmail.com</a></div>
+      </div>
+    </aside>
+
+    <!-- ── main column ── -->
+    <main>
+      <!-- profile README: the meta-design lives here -->
+      <div class="readme">
+        <div class="readme-head">📄 <b>SturdyRobot</b> / README.md</div>
+        <div class="readme-body">
+          <h2>Hi, I&rsquo;m Noel — &ldquo;Sturdy Robot&rdquo; 🤖</h2>
+          <p>I build apps, tools, and games end-to-end, and I build <b>AI-native</b>: I own the
+          architecture and the decisions, and direct an AI coding agent to implement, test, and
+          generate assets — shipping fast <i>without</i> dropping the quality bar.</p>
+          <p>Everything pinned below is real and runs. The retro desktop you&rsquo;re looking at
+          this through is one of them.</p>
+          <h3>How I work</h3>
+          <p>Design the contracts myself → let AI draft against them → test, review, and reject what&rsquo;s
+          wrong → verify every change in a real browser before it lands. The tooling I build reflects the
+          same idea: <a href="https://github.com/SturdyRobot/sturdy-harness" target="_blank" rel="noopener noreferrer">SturdyHarness</a>
+          runs AI agents under hard budgets with byte-identical replay, so a change&rsquo;s effect is
+          <i>verifiable</i>, not vibes.</p>
+          <div class="chips">
+            <span class="chip">Rust</span><span class="chip">React</span><span class="chip">TypeScript</span>
+            <span class="chip">Node</span><span class="chip">Systems</span><span class="chip">Game dev</span>
+            <span class="chip">AI-native workflow</span>
+          </div>
+          <div class="kv">🌐 <a href="https://sturdyrobot.io" target="_blank" rel="noopener noreferrer">sturdyrobot.io</a>
+            &nbsp;·&nbsp; ✉️ <a href="mailto:noeljacksonjs@gmail.com">noeljacksonjs@gmail.com</a></div>
+        </div>
+      </div>
+
+      <!-- pinned repos -->
+      <div class="section-title">📌 Pinned</div>
+      <div class="grid" id="repos"></div>
+
+      <!-- contribution graph -->
+      <div class="contrib">
+        <h4 id="contrib-title">Contribution activity</h4>
+        <div class="graph" id="graph"></div>
+        <div class="legend">Less
+          <span class="cell" style="background:#161b22"></span>
+          <span class="cell" style="background:#0e4429"></span>
+          <span class="cell" style="background:#006d32"></span>
+          <span class="cell" style="background:#26a641"></span>
+          <span class="cell" style="background:#39d353"></span>
+          More</div>
+      </div>
+    </main>
+  </div>
+
+  <div class="foot">A stylized profile — my real work, curated. Not the actual github.com. Links go to the real repos and sites.</div>
+
+<script>
+  // ── pinned repositories (all real; links go to the real source or site) ──
+  const REPOS = [
+    { name:'sturdy-harness', lang:'Rust', color:'var(--rust)', badge:'Public',
+      desc:'Deterministic AI-agent execution & verification harness — hard budgets, AST compaction, MCP tools, SQLite replay.',
+      href:'https://github.com/SturdyRobot/sturdy-harness', ext:'github.com' },
+    { name:'mac-portfolio', lang:'JavaScript', color:'var(--js)', badge:'Public',
+      desc:'This desktop. A portfolio built as a working classic Mac OS 8 — a pluggable app + game platform.',
+      href:'https://github.com/SturdyRobot/mac-portfolio', ext:'github.com' },
+    { name:'worldframe', lang:'Rust · React', color:'var(--react)', badge:'Product',
+      desc:'Worldbuilding app for writers & TTRPG creators. My flagship — a Tauri desktop app.',
+      href:'https://tryworldframe.com', ext:'tryworldframe.com' },
+    { name:'zenomon', lang:'JavaScript', color:'var(--js)', badge:'in mac-portfolio',
+      desc:'Single-file monster-breeding sim — genome splicing, IV/EV stats, auto-battle, prestige, daily rewards.',
+      href:'https://github.com/SturdyRobot/mac-portfolio/tree/main/public/games/zenomon', ext:'source' },
+    { name:'raid-clicker', lang:'JavaScript', color:'var(--js)', badge:'in mac-portfolio',
+      desc:'Tarkov-style extraction-looter incremental — loadouts, survivability, raids, stash, season wipes.',
+      href:'https://github.com/SturdyRobot/mac-portfolio/tree/main/public/games/raid', ext:'source' },
+    { name:'rc-playground', lang:'JavaScript', color:'var(--js)', badge:'in mac-portfolio',
+      desc:'3D driving time-trial with real physics — three.js + cannon-es (suspension, jumps, lap timer).',
+      href:'https://github.com/SturdyRobot/mac-portfolio/tree/main/public/games/playground', ext:'source' },
+  ];
+  const grid = document.getElementById('repos');
+  REPOS.forEach(r=>{
+    const a = document.createElement('a');
+    a.className = 'repo'; a.href = r.href; a.target = '_blank'; a.rel = 'noopener noreferrer';
+    a.innerHTML =
+      '<div class="repo-top"><span class="repo-name">'+r.name+'</span><span class="badge">'+r.badge+'</span></div>'+
+      '<p class="repo-desc">'+r.desc+'</p>'+
+      '<div class="repo-meta">'+
+        '<span class="lang"><span class="dot" style="background:'+r.color+'"></span>'+r.lang+'</span>'+
+        '<span class="ext">↗ '+r.ext+'</span>'+
+      '</div>';
+    grid.appendChild(a);
+  });
+
+  // ── contribution graph: deterministic (seeded LCG), decorative texture ──
+  const LEVELS = ['#161b22','#0e4429','#006d32','#26a641','#39d353'];
+  let seed = 1337;
+  const rnd = () => (seed = (seed*1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const g = document.getElementById('graph');
+  const WEEKS = 52;
+  let count = 0;
+  for(let w=0; w<WEEKS; w++){
+    for(let d=0; d<7; d++){
+      const cell = document.createElement('span');
+      cell.className = 'cell';
+      // busier in the middle of the week, a few quiet stretches
+      const r = rnd();
+      let lvl = 0;
+      if(r > 0.42) lvl = 1;
+      if(r > 0.62) lvl = 2;
+      if(r > 0.80) lvl = 3;
+      if(r > 0.92) lvl = 4;
+      cell.style.background = LEVELS[lvl];
+      count += lvl;
+      g.appendChild(cell);
+    }
+  }
+  document.getElementById('contrib-title').textContent =
+    'Contribution activity — the last year';
+</script>
+</body>
+</html>

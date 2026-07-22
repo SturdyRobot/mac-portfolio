@@ -20,7 +20,13 @@
 // ═══════════════════════════════════════════════════════════════════
 
 export const sites = {
-  // (empty — add your redesigns here)
+  // Type "github.com" into the in-OS browser → my curated project hub,
+  // a stylized GitHub profile that showcases the real work.
+  'github.com': {
+    name: 'GitHub',
+    tagline: "My projects, the way I'd show them",
+    path: '/sites/hub/index.html',
+  },
 }
 
 // Turn any typed input into a lookup key: strip protocol, www, path.
