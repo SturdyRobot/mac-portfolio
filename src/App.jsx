@@ -11,7 +11,12 @@ export default function App() {
   const theme = useOS((s) => s.theme)
   const power = useOS((s) => s.power)
   const setPower = useOS((s) => s.setPower)
+  const openApp = useOS((s) => s.openApp)
   useEffect(() => applyTheme(theme), [])
+  // greet every visitor with the "Start Here" window (openApp de-dupes)
+  useEffect(() => {
+    openApp('starthere')
+  }, [openApp])
 
   return (
     <div className="screen">

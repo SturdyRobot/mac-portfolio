@@ -1,10 +1,17 @@
 import { apps } from '../apps.js'
 import { useOS } from '../store.js'
 
+const isTouch =
+  typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches
+
 function DesktopIcon({ app }) {
   const openApp = useOS((s) => s.openApp)
   return (
-    <div className="desktop-icon" onDoubleClick={() => openApp(app.id)}>
+    <div
+      className="desktop-icon"
+      onDoubleClick={() => openApp(app.id)}
+      onClick={isTouch ? () => openApp(app.id) : undefined}
+    >
       <div className="desktop-icon-glyph">
         {typeof app.icon === 'function' ? <app.icon size={34} /> : app.icon}
       </div>

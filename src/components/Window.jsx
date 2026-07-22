@@ -26,10 +26,10 @@ export default function Window({ win }) {
     beginMove(e)
   }
 
-  // chromeless (egg) drag — grab the shell, not the interactive bits
+  // chromeless drag — grab the shell, not any interactive bit
   const onShellDown = (e) => {
     focus(win.id)
-    if (e.target.closest('.egg-ctl, .pet-screen, .pet-buttons, .pet-meters')) return
+    if (e.target.closest('button, canvas, iframe, input, a, .pet-screen, .bb-lcd')) return
     beginMove(e)
   }
 
@@ -120,19 +120,18 @@ export default function Window({ win }) {
           toggleCollapse(win.id) // classic Mac window-shade
         }}
       >
-        <div className="title-ctls left">
-          <button className="ctl close" title="Close" onClick={stop(() => close(win.id))} />
-        </div>
+        <div className="title-ctls left" />
         <div className="title-fill">
           <span className="title-text">{win.title}</span>
         </div>
         <div className="title-ctls right">
-          <button className="ctl zoom" title="Zoom" onClick={stop(() => toggleZoom(win.id))} />
           <button
             className="ctl collapse"
-            title="Collapse"
+            title="Minimize"
             onClick={stop(() => toggleCollapse(win.id))}
           />
+          <button className="ctl zoom" title="Maximize" onClick={stop(() => toggleZoom(win.id))} />
+          <button className="ctl close" title="Close" onClick={stop(() => close(win.id))} />
         </div>
       </div>
       <div className={`window-body ${app?.bleed ? 'bleed' : ''}`}>

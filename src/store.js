@@ -49,15 +49,47 @@ export const useOS = create((set, get) => ({
     }
     const app = getApp(appId)
     if (!app) return
+    // A plain external link (e.g. a GitHub repo that refuses to be framed):
+    // open it in a new browser tab instead of spawning a window.
+    if (app.type === 'link') {
+      if (typeof window !== 'undefined' && app.src) {
+        window.open(app.src, '_blank', 'noopener,noreferrer')
+      }
+      return
+    }
     const cfg = app.window || {}
+    // Always open so the WHOLE app is visible with no fiddling: fit the window to
+    // the viewport, then centre framed apps (floating widgets keep their spot).
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 1280
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 720
+    const small = vw <= 640
+    let w, h, x, y
+    if (small && !app.chromeless) {
+      // phones: framed apps open (nearly) full-screen so they're actually usable
+      x = 4
+      y = 28
+      w = vw - 8
+      h = vh - 34
+    } else {
+      w = Math.max(220, Math.min(cfg.w ?? 480, vw - 12))
+      h = Math.max(150, Math.min(cfg.h ?? 360, vh - 34))
+      if (app.chromeless) {
+        // floating widgets (BitBoy, Tamachu) keep their intended placement
+        x = Math.max(4, Math.min(cfg.x ?? 120, vw - w - 6))
+        y = Math.max(24, Math.min(cfg.y ?? 100, vh - h - 6))
+      } else {
+        // centre it, nudged a little per already-open window so they don't stack dead-on
+        const openCount = get().windows.filter((k) => !k.minimized).length
+        const off = (openCount % 6) * 22
+        x = Math.max(4, Math.min(Math.round((vw - w) / 2) - 44 + off, vw - w - 6))
+        y = Math.max(24, Math.min(Math.round((vh - h) * 0.42) - 22 + off, vh - h - 6))
+      }
+    }
     const win = {
       id: idCounter++,
       appId,
       title: app.name,
-      x: cfg.x ?? 120,
-      y: cfg.y ?? 100,
-      w: cfg.w ?? 480,
-      h: cfg.h ?? 360,
+      x, y, w, h,
       z: ++zCounter,
       minimized: false,
     }

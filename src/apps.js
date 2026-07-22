@@ -8,6 +8,8 @@
 //  type: 'url'       → a live website you made, loaded in a window.
 //  type: 'component' → a built-in OS app (see src/apps/*.jsx).
 //  type: 'html'      → a chunk of inline HTML/JSX (quick text pages).
+//  type: 'link'      → an external link; opens in a new browser tab (for sites
+//                      that refuse to be framed, like GitHub).
 //
 //  onDesktop: true   → shows an icon on the desktop.
 //  menu: true        → shows in the  Apple menu + File menu launchers.
@@ -22,8 +24,22 @@ import BitBoyIcon from './components/BitBoyIcon.jsx'
 import WorldFrameIcon from './components/WorldFrameIcon.jsx'
 import PixelPet from './apps/PixelPet.jsx'
 import PixelPetIcon from './components/PixelPetIcon.jsx'
+import HighScores from './apps/HighScores.jsx'
+import StartHere from './apps/StartHere.jsx'
+import Terminal from './apps/Terminal.jsx'
 
 export const apps = [
+  {
+    id: 'starthere',
+    name: 'Start Here',
+    category: 'Apps',
+    icon: '👋',
+    type: 'component',
+    component: StartHere,
+    window: { w: 440, h: 500, x: 60, y: 46 },
+    onDesktop: true, // first thing a visitor sees
+    menu: true,
+  },
   {
     id: 'worldframe',
     name: 'WorldFrame',
@@ -33,6 +49,16 @@ export const apps = [
     src: 'https://tryworldframe.com', // passes through to the real site
     window: { w: 900, h: 620, x: 90, y: 40 },
     onDesktop: true, // the flagship — featured on the desktop
+    menu: true,
+  },
+  {
+    id: 'sturdyharness',
+    name: 'SturdyHarness',
+    category: 'GitHub',
+    icon: '🦀',
+    type: 'link', // opens the repo in a new tab (GitHub can't be framed)
+    src: 'https://github.com/SturdyRobot/sturdy-harness',
+    onDesktop: true, // a real Rust tool — worth featuring, not burying in a menu
     menu: true,
   },
   {
@@ -54,9 +80,9 @@ export const apps = [
     icon: BitBoyIcon, // a component instead of an emoji
     type: 'component',
     component: BitBoy,
-    window: { w: 318, h: 588, x: 300, y: 36 },
-    bleed: true, // device fills the window edge-to-edge
-    onDesktop: false,
+    window: { w: 318, h: 600, x: 300, y: 30 },
+    chromeless: true, // floating handheld, no window frame
+    onDesktop: true, // a highlight — feature it
     menu: true,
   },
   {
@@ -76,6 +102,17 @@ export const apps = [
     type: 'component',
     component: About,
     window: { w: 380, h: 390, x: 60, y: 70 },
+    onDesktop: true,
+    menu: true,
+  },
+  {
+    id: 'terminal',
+    name: 'Terminal',
+    category: 'Apps',
+    icon: '🖥️',
+    type: 'component',
+    component: Terminal,
+    window: { w: 560, h: 380, x: 170, y: 80 },
     onDesktop: true,
     menu: true,
   },
@@ -102,15 +139,47 @@ export const apps = [
     menu: true,
   },
   {
-    id: 'myblog',
-    name: 'My Website',
-    category: 'Sites',
-    icon: '📝',
-    type: 'url',
-    // ↓ change this to a site YOU made
-    src: 'https://example.com',
-    window: { w: 720, h: 500, x: 150, y: 60 },
-    onDesktop: false,
+    id: 'playground',
+    name: 'RC Playground',
+    category: 'Games',
+    icon: '🚗',
+    type: 'iframe',
+    src: '/games/playground/index.html',
+    window: { w: 640, h: 480, x: 150, y: 50 },
+    onDesktop: false, // menu-only (Apple menu → Games)
+    menu: true,
+  },
+  {
+    id: 'zenomon',
+    name: 'Zenomon',
+    category: 'Games',
+    icon: '🧬',
+    type: 'iframe',
+    src: '/games/zenomon/index.html',
+    window: { w: 760, h: 680, x: 120, y: 40 },
+    onDesktop: false, // menu-only (Apple menu → Games)
+    menu: true,
+  },
+  {
+    id: 'raid',
+    name: 'Raid Clicker',
+    category: 'Games',
+    icon: '⚔️',
+    type: 'iframe',
+    src: '/games/raid/index.html',
+    window: { w: 900, h: 640, x: 110, y: 44 },
+    onDesktop: false, // menu-only (Apple menu → Games)
+    menu: true,
+  },
+  {
+    id: 'highscores',
+    name: 'High Scores',
+    category: 'Games',
+    icon: '🏆',
+    type: 'component',
+    component: HighScores,
+    window: { w: 300, h: 400, x: 420, y: 80 },
+    onDesktop: true,
     menu: true,
   },
 ]

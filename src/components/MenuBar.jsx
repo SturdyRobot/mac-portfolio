@@ -57,6 +57,7 @@ function MuteToggle() {
 
 export default function MenuBar() {
   const [open, setOpen] = useState(null)
+  const [openCat, setOpenCat] = useState(null)
   const openApp = useOS((s) => s.openApp)
   const closeFront = useOS((s) => s.closeFront)
   const closeAll = useOS((s) => s.closeAll)
@@ -66,6 +67,11 @@ export default function MenuBar() {
   const hasWindows = useOS((s) => s.windows.length > 0)
 
   const toggle = (name) => setOpen((m) => (m === name ? null : name))
+  // fold every category back up whenever the Apple menu isn't the one open,
+  // so you never come back to a wall of a hundred items
+  useEffect(() => {
+    if (open !== 'apple') setOpenCat(null)
+  }, [open])
   const run = (fn) => () => {
     playSound('select')
     fn()
@@ -127,14 +133,27 @@ export default function MenuBar() {
             />
             <Sep />
             <Row icon="🎨" label="Control Panels" onClick={run(() => openApp('appearance'))} />
-            {/* every app is launchable from up here, grouped by category */}
+            {/* categories start folded — click one to open it, so the menu
+                stays short instead of dumping every app at once */}
             {cats.map((c) => (
               <Fragment key={c}>
                 <Sep />
-                <div className="menu-label">{c}</div>
-                {byCat[c].map((a) => (
-                  <Row key={a.id} icon={a.icon} label={a.name} onClick={run(() => openApp(a.id))} />
-                ))}
+                <div
+                  className={`menu-label menu-cat ${openCat === c ? 'expanded' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    playSound('click')
+                    setOpenCat((o) => (o === c ? null : c))
+                  }}
+                >
+                  <span className="menu-cat-caret">{openCat === c ? '▾' : '▸'}</span>
+                  {c}
+                  <span className="menu-cat-count">{byCat[c].length}</span>
+                </div>
+                {openCat === c &&
+                  byCat[c].map((a) => (
+                    <Row key={a.id} icon={a.icon} label={a.name} onClick={run(() => openApp(a.id))} />
+                  ))}
               </Fragment>
             ))}
           </div>

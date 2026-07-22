@@ -2,21 +2,27 @@ export default function About() {
   return (
     <div className="about">
       <div className="about-face">☺</div>
-      <h2>Welcome</h2>
+      <h2>Hi, I&rsquo;m Noel</h2>
       <p>
-        This is my little Macintosh. Double-click the icons on the desktop
-        to open my projects, games, and websites.
+        I&rsquo;m a developer who goes by <b>Sturdy Robot</b> online. I like
+        building things all the way through: the idea, the code, and the small
+        details nobody asked for.
       </p>
       <p>
-        Everything here is something I made. Poke around — open the{' '}
-        <b>Web Browser</b> and visit my sites without leaving the desktop.
+        This desktop is a good example. It&rsquo;s a portfolio, but I wanted it to
+        be something you could actually use, so I made it a working Mac. Open the{' '}
+        <b>Web Browser</b> and it loads my real sites, right here on the desktop.
       </p>
       <p className="about-sig">
-        Made with ❤︎ by <b>Noel Jackson</b>
+        Built by <b>Noel Jackson</b>
         <br />
         aka <b>Sturdy Robot</b> 🤖
       </p>
       <p className="about-links">
+        <a className="about-link" href="mailto:noeljacksonjs@gmail.com">
+          noeljacksonjs@gmail.com
+        </a>
+        <br />
         <a
           className="about-link"
           href="https://github.com/SturdyRobot"

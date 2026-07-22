@@ -58,6 +58,17 @@ export function playSound(name) {
       case 'select':
         tone(440, 0, 0.04, { vol: 0.03 })
         break
+      case 'happy':
+        tone(660, 0, 0.06, { type: 'triangle', vol: 0.05 })
+        tone(880, 0.06, 0.09, { type: 'triangle', vol: 0.05 })
+        break
+      case 'celebrate': // rare reward fanfare — a little rising arpeggio
+        tone(523, 0, 0.1, { type: 'square', vol: 0.05 })
+        tone(659, 0.1, 0.1, { type: 'square', vol: 0.05 })
+        tone(784, 0.2, 0.1, { type: 'square', vol: 0.05 })
+        tone(1047, 0.3, 0.22, { type: 'square', vol: 0.06 })
+        tone(1568, 0.42, 0.26, { type: 'triangle', vol: 0.05 })
+        break
       default:
         break
     }
