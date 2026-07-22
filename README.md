@@ -2,7 +2,9 @@
 
 [![CI](https://github.com/SturdyRobot/mac-portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/SturdyRobot/mac-portfolio/actions/workflows/ci.yml)
 
-**Live:** [sturdyrobot.io](https://sturdyrobot.io) · **How it's built:** [AI_SPEC.md](AI_SPEC.md)
+**Live:** [sturdyrobot.io](https://sturdyrobot.io)
+
+**Stack:** React 18 · Vite · Zustand · three.js + cannon-es · Web Audio — built **AI-native**, directed with Claude Code. See [AI_SPEC.md](AI_SPEC.md).
 
 A personal portfolio disguised as a fully working **classic Mac OS 8 "Platinum"
 desktop** — draggable windows, a live menu bar, system sounds, theme "flavors",

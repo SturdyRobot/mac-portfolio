@@ -61,6 +61,31 @@ z-order, drag/resize/minimize/shade, the theme, and the power state. Views (`Men
 that store rather than inventing its own state — which is why rapid window drags don't trigger
 global re-render cascades.
 
+## Complex features, concretely
+
+The two hardest pieces were structured to keep AI-generated complexity *contained*:
+
+**RC Playground — the 3D engine** (`public/games/playground/`). This is the most complex
+single artifact: a real-time 3D driving game with [three.js](https://threejs.org) for
+rendering and [cannon-es](https://github.com/pmndrs/cannon-es) for rigid-body physics
+(suspension, jumps, a boost pad, a lap timer). The direction I gave was structural first:
+build it as a **fully self-contained page behind the iframe boundary**, so all of its
+3D/physics complexity — the render loop, the physics step, the vehicle model — lives in one
+file and can't leak into the OS runtime or fight React for the event loop. The OS reaches it
+through exactly one manifest line (`type: 'iframe'`); it knows nothing else about it. That
+boundary is what made it safe to let an agent iterate hard on a 700-line physics loop without
+risking the rest of the desktop.
+
+**The window manager** (`src/store.js`). The opposite problem — this one has to be shared by
+everything. I defined the store's shape up front (open windows, z-order, drag/resize/
+minimize/shade, theme, power) as a single Zustand store, and the rule that **views only read
+from it**. Agent-generated UI plugs into that store instead of inventing local state, which is
+why rapid window drags update coordinates without triggering global re-render cascades. It's
+now typed (`OSState` in `src/types.d.ts`) and checked under strict TypeScript, so a malformed
+state update is a compile error, not a runtime surprise.
+
+The pattern in both: **I own the boundary; the agent works inside it.**
+
 ## Verification, not vibes
 
 The tooling I build reflects the same principle. [SturdyHarness](https://github.com/SturdyRobot/sturdy-harness)
