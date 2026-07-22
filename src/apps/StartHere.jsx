@@ -37,6 +37,13 @@ export default function StartHere() {
             <small>A deterministic AI-agent harness in Rust. Source on GitHub.</small>
           </span>
         </button>
+        <button className="sh-card" onClick={() => openApp('playground')}>
+          <span className="sh-card-emoji">🚗</span>
+          <span className="sh-card-text">
+            <b>RC Playground</b>
+            <small>A small driving game. 3D physics with three.js + cannon-es.</small>
+          </span>
+        </button>
         <button className="sh-card" onClick={() => openApp('bitboy')}>
           <span className="sh-card-emoji">🎮</span>
           <span className="sh-card-text">

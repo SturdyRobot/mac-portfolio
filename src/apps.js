@@ -146,7 +146,7 @@ export const apps = [
     type: 'iframe',
     src: '/games/playground/index.html',
     window: { w: 640, h: 480, x: 150, y: 50 },
-    onDesktop: false, // menu-only (Apple menu → Games)
+    onDesktop: true, // 3D physics demo — the one game worth featuring
     menu: true,
   },
   {
