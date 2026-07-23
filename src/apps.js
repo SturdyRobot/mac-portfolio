@@ -40,7 +40,7 @@ export const apps = [
     type: 'component',
     component: StartHere,
     window: { w: 440, h: 500, x: 60, y: 46 },
-    onDesktop: true, // first thing a visitor sees
+    onDesktop: false, // auto-opens on load — no icon needed
     menu: true,
   },
   {
@@ -83,7 +83,7 @@ export const apps = [
     icon: '🦀',
     type: 'link', // opens the repo in a new tab (GitHub can't be framed)
     src: 'https://github.com/SturdyRobot/sturdy-harness',
-    onDesktop: true, // a real Rust tool — worth featuring, not burying in a menu
+    onDesktop: false, // menu-only (also listed inside Projects)
     menu: true,
   },
   {
@@ -107,7 +107,7 @@ export const apps = [
     component: BitBoy,
     window: { w: 318, h: 600, x: 300, y: 30 },
     chromeless: true, // floating handheld, no window frame
-    onDesktop: true, // a highlight — feature it
+    onDesktop: false, // menu-only (🤖 menu → Games)
     menu: true,
   },
   {
@@ -138,7 +138,7 @@ export const apps = [
     type: 'component',
     component: Terminal,
     window: { w: 560, h: 380, x: 170, y: 80 },
-    onDesktop: true,
+    onDesktop: false, // menu-only
     menu: true,
   },
   {
@@ -171,7 +171,7 @@ export const apps = [
     type: 'iframe',
     src: '/games/playground/index.html',
     window: { w: 640, h: 480, x: 150, y: 50 },
-    onDesktop: true, // 3D physics demo — the one game worth featuring
+    onDesktop: false, // menu-only (🤖 menu → Games)
     menu: true,
   },
   {
@@ -204,7 +204,7 @@ export const apps = [
     type: 'component',
     component: HighScores,
     window: { w: 300, h: 400, x: 420, y: 80 },
-    onDesktop: true,
+    onDesktop: false, // menu-only
     menu: true,
   },
 ]
