@@ -19,11 +19,16 @@ const DEFAULTS = {
 
 export default {
   async fetch(request, env) {
-    const origin = env.ALLOW_ORIGIN || '*'
+    // ALLOW_ORIGIN may be a comma-separated allowlist; echo whichever origin
+    // matches (so both apex and www work), else fall back to the first entry.
+    const allowlist = (env.ALLOW_ORIGIN || '').split(',').map((s) => s.trim()).filter(Boolean)
+    const reqOrigin = request.headers.get('Origin') || ''
+    const origin = allowlist.length === 0 ? '*' : (allowlist.includes(reqOrigin) ? reqOrigin : allowlist[0])
     const cors = {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'content-type',
+      'Vary': 'Origin',
     }
     const json = (obj, status = 200) =>
       new Response(JSON.stringify(obj), { status, headers: { 'content-type': 'application/json', ...cors } })

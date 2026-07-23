@@ -9,7 +9,7 @@ main = "scope-proxy.js"
 compatibility_date = "2025-01-01"
 
 [vars]
-ALLOW_ORIGIN = "https://sturdyrobot.io"
+ALLOW_ORIGIN = "https://sturdyrobot.io,https://www.sturdyrobot.io"
 GROQ_MODEL = "llama-3.3-70b-versatile"
 RATE_MAX = "5"
 
