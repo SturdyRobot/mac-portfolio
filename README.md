@@ -83,7 +83,7 @@ Adding a project is one entry:
 
 | App | What it is |
 |-----|------------|
-| **Hire Noel** *(Scope Generator)* | A real client-intake tool: a guided wizard → a validated, itemized project scope with a downloadable **PDF** quote. Deterministic **Zod** pricing engine; an optional Groq LLM layer (via a rate-limited Cloudflare Worker) only *polishes the prose* — it can never change the numbers. [More below ↓](#featured-build--the-scope-generator-hire-noel) |
+| **Hire Noel** *(project intake)* | A real lead-capture tool: a guided wizard collects what the client wants, their **budget**, and their **timeline** → a clean project brief (with a downloadable **PDF**) sent to my inbox. No price shown — it qualifies leads without scaring them off a number. Validated end-to-end with **Zod**; an optional Groq LLM (via a rate-limited Cloudflare Worker) polishes the summary. [More below ↓](#featured-build--the-client-intake-hire-noel) |
 | **Start Here** | The welcome hub — who I am and where to look first. |
 | **Terminal** | A working retro shell over a virtual filesystem: `ls`/`cd`/`cat`, `open <app>` (actually launches apps), `neofetch`, command history, plus a pile of developer easter eggs and a hidden `hack` sequence that unlocks a CTF-style flag. |
 | **Web Browser** | An in-OS browser where typing a real domain loads *my redesign* of that site (a pluggable site registry). |
@@ -104,35 +104,33 @@ Adding a project is one entry:
 
 ---
 
-## Featured build — the Scope Generator ("Hire Noel")
+## Featured build — the client intake ("Hire Noel")
 
-The most architecturally interesting piece, and a real lead-intake tool. A guided
-wizard turns a few choices into a validated, itemized project scope with a
-downloadable PDF quote — structured so the **LLM can never touch a number**:
+The most architecturally interesting piece, and a real lead-capture tool. A guided
+wizard collects what the client wants, their budget, and their timeline, and hands
+it over as a clean project **brief** — *no price is ever shown*, so a lead never
+bounces on a number before we've talked:
 
-- **Deterministic core.** A pure pricing engine (`pricing.js`) turns the intake into
-  a quote — same input → same output, every time. The figure is defensible, not
-  model-invented.
-- **Zod at every boundary.** Schemas validate the intake *in*, the scope *out*, and
+- **Deterministic core.** A pure builder (`brief.js`) turns the intake into a
+  structured brief — same input → same output.
+- **Zod at every boundary.** Schemas validate the intake *in*, the brief *out*, and
   the model's reply — so a bad LLM response can't reach the document.
-- **LLM sandboxed to prose.** An optional [Cloudflare Worker](worker/) injects a Groq
-  key server-side (never in the browser), rate-limits by IP, and is told the price is
-  fixed — it only writes the sentence *around* the numbers. The reply is re-validated
-  client-side before it's shown.
-- **Graceful degradation.** Ships fully functional with **no backend** (deterministic
-  summary); the AI is progressive enhancement. jsPDF is lazy-loaded, so it never
-  weighs down first paint.
+- **LLM only writes prose.** An optional [Cloudflare Worker](worker/) injects a Groq
+  key server-side (never in the browser) and rate-limits by IP; it writes only the
+  2–3 sentence summary, and the reply is re-validated client-side before it's shown.
+- **Graceful degradation.** Ships fully functional with **no backend**; the AI is
+  progressive enhancement. jsPDF is lazy-loaded, so it never weighs down first paint.
 
-Layered as `src/apps/scope/` — `catalog` (rate card) → `schema` (Zod) → `pricing`
-(pure engine) → `summarize` (optional LLM) → `pdf` → `ScopeGenerator` (UI) — with
-`worker/` holding the edge proxy and a one-command deploy.
+Layered as `src/apps/scope/` — `catalog` → `schema` (Zod) → `brief` (pure builder)
+→ `summarize` (optional LLM) → `pdf` → `ScopeGenerator` (UI) — with `worker/`
+holding the edge proxy and a one-command deploy.
 
 ---
 
 ## Tech stack
 
 - **UI:** React 18, Vite 5, [Zustand](https://github.com/pmndrs/zustand) for the window-manager store.
-- **Scope engine:** [Zod](https://zod.dev) schemas + a pure deterministic pricing engine; [jsPDF](https://github.com/parallax/jsPDF) (lazy-loaded) for client-side quote PDFs.
+- **Intake engine:** [Zod](https://zod.dev) schemas + a pure deterministic brief builder; [jsPDF](https://github.com/parallax/jsPDF) (lazy-loaded) for the client-side PDF brief.
 - **Edge:** a Cloudflare Worker proxies the optional LLM summary (Groq), keeping the API key server-side and rate-limiting by IP.
 - **Type safety:** the manifest + window-store are strict-TypeScript-checked via `// @ts-check` + `tsc --noEmit` (see `src/types.d.ts`); ESLint + build run in CI.
 - **3D game:** three.js + cannon-es. Other games are hand-written vanilla JS/Canvas, each fully self-contained in `/public`.

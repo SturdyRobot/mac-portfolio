@@ -133,6 +133,25 @@
 .sg-assume li { margin: 4px 0; }
 .sg-foot-result { justify-content: space-between; }
 
+/* budget/deadline selects */
+.sg-seg-hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--mute); }
+.sg-select {
+  width: 100%; border: 1.5px solid var(--line); border-radius: 10px; padding: 11px 12px;
+  font: inherit; color: var(--ink); background: #fff; cursor: pointer;
+}
+.sg-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-weak); }
+
+/* result: budget + timeline strip */
+.sg-headline-lbl { font-size: 11px; color: var(--mute); text-transform: uppercase; letter-spacing: .5px; }
+.sg-headline-val { font-size: 20px; font-weight: 800; margin-top: 3px; color: var(--ink); letter-spacing: -.2px; }
+.sg-headline-r { text-align: right; }
+
+/* result: "what's involved" list is label-only now */
+.sg-lines-label { font-size: 12px; font-weight: 700; color: var(--mute); text-transform: uppercase; letter-spacing: .4px; margin: 0 0 8px; }
+.sg-line { grid-template-columns: 1fr; }
+.sg-note { font-size: 13px; color: #374151; margin: 16px 0 0; }
+.sg-note b { color: var(--ink); }
+
 /* small screens */
 @media (max-width: 560px) {
   .sg-grid { grid-template-columns: 1fr; }

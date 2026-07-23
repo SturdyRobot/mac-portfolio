@@ -10,11 +10,11 @@ import { SCOPE_PROXY } from './config.js'
 
 /**
  * @param {import('zod').infer<typeof import('./schema.js').Intake>} intake
- * @param {import('zod').infer<typeof import('./schema.js').Scope>} scope
+ * @param {import('zod').infer<typeof import('./schema.js').Brief>} brief
  * @returns {Promise<{ summary: string, source: 'local' | 'ai' }>}
  */
-export async function polishSummary(intake, scope, { timeoutMs = 8000 } = {}) {
-  const fallback = { summary: scope.summary, source: /** @type {'local'} */ ('local') }
+export async function polishSummary(intake, brief, { timeoutMs = 8000 } = {}) {
+  const fallback = { summary: brief.summary, source: /** @type {'local'} */ ('local') }
   if (!SCOPE_PROXY) return fallback
 
   const controller = new AbortController()
@@ -23,15 +23,14 @@ export async function polishSummary(intake, scope, { timeoutMs = 8000 } = {}) {
     const res = await fetch(SCOPE_PROXY, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      // send only what the prose needs — never the pricing math itself
+      // just the project facts — no price is involved anywhere
       body: JSON.stringify({
         projectType: intake.projectType,
         brief: intake.brief,
         features: intake.features,
         scale: intake.scale,
-        timeline: intake.timeline,
-        total: scope.total,
-        weeks: scope.weeks,
+        budget: intake.budget,
+        deadline: intake.deadline,
       }),
       signal: controller.signal,
     })

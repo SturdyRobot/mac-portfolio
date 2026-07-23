@@ -49,25 +49,23 @@ export default {
     let body
     try { body = await request.json() } catch { return json({ error: 'bad_json' }, 400) }
 
-    const money = (r) => (r ? `$${r.low?.toLocaleString?.() ?? r.low} – $${r.high?.toLocaleString?.() ?? r.high}` : 'n/a')
     const facts = [
       `Project type: ${body.projectType}`,
-      body.brief ? `Client brief: ${String(body.brief).slice(0, 600)}` : '',
-      body.features?.length ? `Features: ${body.features.join(', ')}` : '',
+      body.brief ? `What they said: ${String(body.brief).slice(0, 600)}` : '',
+      body.features?.length ? `Features they want: ${body.features.join(', ')}` : '',
       `Scale: ${body.scale}`,
-      `Timeline preference: ${body.timeline}`,
-      `Quoted price (FIXED — do not change): ${money(body.total)}`,
-      `Quoted timeline (FIXED — do not change): ${body.weeks?.low}-${body.weeks?.high} weeks`,
+      body.budget ? `Budget band: ${body.budget}` : '',
+      body.deadline ? `Timing: ${body.deadline}` : '',
     ].filter(Boolean).join('\n')
 
     const messages = [
       {
         role: 'system',
         content:
-          'You write the opening summary for a freelance software project quote. ' +
-          'Two to three sentences, confident and plain — no marketing hype, no bullet points, no headings. ' +
-          'You MUST NOT mention, alter, or invent any price or timeline other than the fixed figures given. ' +
-          'Write in the voice of the developer (first person is fine).',
+          "You write a short summary of a prospective client's project for a freelance developer's intake form. " +
+          'Two to three sentences, warm and plain — no marketing hype, no bullet points, no headings. ' +
+          'Summarise what they want built. You MUST NOT mention, quote, or invent any price or cost. ' +
+          'You may acknowledge their timing if given. Write in the developer\'s voice (first person is fine).',
       },
       { role: 'user', content: facts },
     ]

@@ -60,6 +60,24 @@ export const TIMELINES = [
 /** Monthly maintenance retainer (hours/month) when opted in. */
 export const RETAINER_HOURS = 8
 
+/** Budget bands the visitor can share (no price is shown to them). */
+export const BUDGETS = [
+  { id: 'under5', label: 'Under $5k' },
+  { id: '5to15', label: '$5k – $15k' },
+  { id: '15to40', label: '$15k – $40k' },
+  { id: 'over40', label: '$40k+' },
+  { id: 'unsure', label: 'Not sure yet' },
+]
+
+/** When they need it done. */
+export const DEADLINES = [
+  { id: 'asap', label: 'As soon as possible' },
+  { id: '1mo', label: 'Within a month' },
+  { id: '1to3', label: '1–3 months' },
+  { id: '3to6', label: '3–6 months' },
+  { id: 'flex', label: 'Flexible / no rush' },
+]
+
 // ─── lookup helpers (kept tiny; no logic lives here) ───
 const byId = (list) => Object.fromEntries(list.map((x) => [x.id, x]))
 export const PROJECT_BY_ID = byId(PROJECT_TYPES)
@@ -67,6 +85,10 @@ export const FEATURE_BY_ID = byId(FEATURES)
 export const SCALE_BY_ID = byId(SCALES)
 export const DESIGN_BY_ID = byId(DESIGNS)
 export const TIMELINE_BY_ID = byId(TIMELINES)
+export const BUDGET_BY_ID = byId(BUDGETS)
+export const BUDGET_IDS = BUDGETS.map((b) => b.id)
+export const DEADLINE_BY_ID = byId(DEADLINES)
+export const DEADLINE_IDS = DEADLINES.map((d) => d.id)
 
 export const PROJECT_IDS = PROJECT_TYPES.map((p) => p.id)
 export const FEATURE_IDS = FEATURES.map((f) => f.id)
