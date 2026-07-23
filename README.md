@@ -1,6 +1,8 @@
 # Sturdy Robot — a portfolio built as a working Macintosh
 
 [![CI](https://github.com/SturdyRobot/mac-portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/SturdyRobot/mac-portfolio/actions/workflows/ci.yml)
+&nbsp;[![Built AI-native](https://img.shields.io/badge/built-AI--native-1f6feb)](AI_SPEC.md)
+&nbsp;[![Live: sturdyrobot.io](https://img.shields.io/badge/live-sturdyrobot.io-2ea043)](https://sturdyrobot.io)
 
 **Live:** [sturdyrobot.io](https://sturdyrobot.io)
 
