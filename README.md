@@ -4,7 +4,7 @@
 
 **Live:** [sturdyrobot.io](https://sturdyrobot.io)
 
-**Stack:** React 18 · Vite · Zustand · three.js + cannon-es · Web Audio — built **AI-native**, directed with Claude Code. See [AI_SPEC.md](AI_SPEC.md).
+**Stack:** React 18 · Vite · Zustand · Zod · three.js + cannon-es · Cloudflare Workers · Web Audio — built **AI-native**, directed with Claude Code. See [AI_SPEC.md](AI_SPEC.md).
 
 A personal portfolio disguised as a fully working **classic Mac OS 8 "Platinum"
 desktop** — draggable windows, a live menu bar, system sounds, theme "flavors",
@@ -36,7 +36,7 @@ flowchart TD
     App --> Menu & Desk & Win
     Win --> Content
 
-    Content -->|component| RApps["React apps<br/>Terminal · Web Browser · Tamachu<br/>BitBoy · High Scores · About · Appearance"]
+    Content -->|component| RApps["React apps<br/>Hire Noel · Terminal · Web Browser · Tamachu<br/>BitBoy · High Scores · About · Appearance"]
     Content -->|iframe| Games["Self-contained games<br/>/public/games/* · /public/bitboy/*"]
     Content -->|url| Live["Live sites in a window<br/>(WorldFrame)"]
     Content -->|link| Ext["External links<br/>(GitHub)"]
@@ -81,6 +81,7 @@ Adding a project is one entry:
 
 | App | What it is |
 |-----|------------|
+| **Hire Noel** *(Scope Generator)* | A real client-intake tool: a guided wizard → a validated, itemized project scope with a downloadable **PDF** quote. Deterministic **Zod** pricing engine; an optional Groq LLM layer (via a rate-limited Cloudflare Worker) only *polishes the prose* — it can never change the numbers. [More below ↓](#featured-build--the-scope-generator-hire-noel) |
 | **Start Here** | The welcome hub — who I am and where to look first. |
 | **Terminal** | A working retro shell over a virtual filesystem: `ls`/`cd`/`cat`, `open <app>` (actually launches apps), `neofetch`, command history, plus a pile of developer easter eggs and a hidden `hack` sequence that unlocks a CTF-style flag. |
 | **Web Browser** | An in-OS browser where typing a real domain loads *my redesign* of that site (a pluggable site registry). |
@@ -101,9 +102,37 @@ Adding a project is one entry:
 
 ---
 
+## Featured build — the Scope Generator ("Hire Noel")
+
+The most architecturally interesting piece, and a real lead-intake tool. A guided
+wizard turns a few choices into a validated, itemized project scope with a
+downloadable PDF quote — structured so the **LLM can never touch a number**:
+
+- **Deterministic core.** A pure pricing engine (`pricing.js`) turns the intake into
+  a quote — same input → same output, every time. The figure is defensible, not
+  model-invented.
+- **Zod at every boundary.** Schemas validate the intake *in*, the scope *out*, and
+  the model's reply — so a bad LLM response can't reach the document.
+- **LLM sandboxed to prose.** An optional [Cloudflare Worker](worker/) injects a Groq
+  key server-side (never in the browser), rate-limits by IP, and is told the price is
+  fixed — it only writes the sentence *around* the numbers. The reply is re-validated
+  client-side before it's shown.
+- **Graceful degradation.** Ships fully functional with **no backend** (deterministic
+  summary); the AI is progressive enhancement. jsPDF is lazy-loaded, so it never
+  weighs down first paint.
+
+Layered as `src/apps/scope/` — `catalog` (rate card) → `schema` (Zod) → `pricing`
+(pure engine) → `summarize` (optional LLM) → `pdf` → `ScopeGenerator` (UI) — with
+`worker/` holding the edge proxy and a one-command deploy.
+
+---
+
 ## Tech stack
 
 - **UI:** React 18, Vite 5, [Zustand](https://github.com/pmndrs/zustand) for the window-manager store.
+- **Scope engine:** [Zod](https://zod.dev) schemas + a pure deterministic pricing engine; [jsPDF](https://github.com/parallax/jsPDF) (lazy-loaded) for client-side quote PDFs.
+- **Edge:** a Cloudflare Worker proxies the optional LLM summary (Groq), keeping the API key server-side and rate-limiting by IP.
+- **Type safety:** the manifest + window-store are strict-TypeScript-checked via `// @ts-check` + `tsc --noEmit` (see `src/types.d.ts`); ESLint + build run in CI.
 - **3D game:** three.js + cannon-es. Other games are hand-written vanilla JS/Canvas, each fully self-contained in `/public`.
 - **Backend:** a single PHP script (`leaderboard.php`) for shared high scores.
 - **Persistence:** `localStorage` (theme, pet, score cache); PHP for the global board.
