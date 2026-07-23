@@ -83,7 +83,7 @@ Adding a project is one entry:
 
 | App | What it is |
 |-----|------------|
-| **Hire Noel** *(project intake)* | A real lead-capture tool: a guided wizard collects what the client wants, their **budget**, and their **timeline** → a clean project brief (with a downloadable **PDF**) sent to my inbox. No price shown — it qualifies leads without scaring them off a number. Validated end-to-end with **Zod**; an optional Groq LLM (via a rate-limited Cloudflare Worker) polishes the summary. [More below ↓](#featured-build--the-client-intake-hire-noel) |
+| **Hire Noel** *(AI intake pipeline)* | A real lead-capture *pipeline*, not a form. An adaptive wizard (personal vs business → company size) → an **LLM asks the follow-up questions the project actually needs** (2 for a side project, up to 8 deep ones for an enterprise) → a fully-classified lead lands in my **Discord**: **client-tier detection**, an **internal price estimate**, a delivery schedule, and their answers — *all computed server-side so the client never sees a number.* [More below ↓](#featured-build--the-hire-noel-intake-pipeline) |
 | **Start Here** | The welcome hub — who I am and where to look first. |
 | **Terminal** | A working retro shell over a virtual filesystem: `ls`/`cd`/`cat`, `open <app>` (actually launches apps), `neofetch`, command history, plus a pile of developer easter eggs and a hidden `hack` sequence that unlocks a CTF-style flag. |
 | **Web Browser** | An in-OS browser where typing a real domain loads *my redesign* of that site (a pluggable site registry). |
@@ -104,26 +104,44 @@ Adding a project is one entry:
 
 ---
 
-## Featured build — the client intake ("Hire Noel")
+## Featured build — the "Hire Noel" intake pipeline
 
-The most architecturally interesting piece, and a real lead-capture tool. A guided
-wizard collects what the client wants, their budget, and their timeline, and hands
-it over as a clean project **brief** — *no price is ever shown*, so a lead never
-bounces on a number before we've talked:
+The most architecturally interesting piece: a lead-capture *pipeline* that's part
+adaptive UX, part LLM orchestration, part edge backend — built so the client gets a
+smooth, no-price experience while I get a fully-qualified, priced lead.
 
-- **Deterministic core.** A pure builder (`brief.js`) turns the intake into a
-  structured brief — same input → same output.
-- **Zod at every boundary.** Schemas validate the intake *in*, the brief *out*, and
-  the model's reply — so a bad LLM response can't reach the document.
-- **LLM only writes prose.** An optional [Cloudflare Worker](worker/) injects a Groq
-  key server-side (never in the browser) and rate-limits by IP; it writes only the
-  2–3 sentence summary, and the reply is re-validated client-side before it's shown.
-- **Graceful degradation.** Ships fully functional with **no backend**; the AI is
-  progressive enhancement. jsPDF is lazy-loaded, so it never weighs down first paint.
+**The flow:**
+- **Adaptive intake.** "Who's this for?" → personal vs business → *(business)*
+  company size. That branch drives everything downstream.
+- **AI asks what the project needs.** A [Cloudflare Worker](worker/) calls Groq
+  (Llama 3.3) to generate the follow-up questions *this specific project* needs to
+  be scoped — as many as it takes: ~2 for a personal side project, up to **8 deeper
+  ones** (stakeholders, integrations, compliance, procurement) for an enterprise.
+- **Two audiences, one pipeline.** The client sees a clean brief, a "what I'll need
+  from you" checklist, and a *"Sent ✓"* confirmation. I receive — in **Discord** —
+  the full lead plus a **client-tier classification**, an **internal price
+  estimate**, and a delivery schedule.
+- **The price is Noel-only by construction.** Tier (email domain + self-reported
+  size) *and* the estimate (hours × per-build-type rate × tier multiplier) are
+  computed **inside the Worker** and posted to Discord — they're never returned to
+  the browser, so a client can't see them even in devtools.
+
+**Why it's built this way:**
+- **Deterministic core + AI enrichment.** A pure builder (`brief.js`) is the
+  backbone; the LLM adds tailored questions and prose; the pricing/tier math is
+  plain, auditable server-side logic.
+- **Zod at every boundary** — intake *in*, brief *out*, and the model's reply *in* —
+  so a bad LLM response can't reach the document.
+- **Server-side by design.** Keys, pricing, and tier detection live only in the
+  Worker; the static site never holds a secret or a margin.
+- **Graceful degradation.** Works fully with **no backend** (deterministic brief,
+  `mailto` delivery); the AI, Discord, and pricing light up when the Worker's
+  configured. jsPDF is lazy-loaded, so it never weighs down first paint.
 
 Layered as `src/apps/scope/` — `catalog` → `schema` (Zod) → `brief` (pure builder)
-→ `summarize` (optional LLM) → `pdf` → `ScopeGenerator` (UI) — with `worker/`
-holding the edge proxy and a one-command deploy.
+→ `summarize` (LLM) → `submit` (delivery) → `pdf` → `ScopeGenerator` (UI) — with
+`worker/` holding the edge proxy: AI questions, tier detection, server-side pricing,
+and Discord delivery, all behind a one-command deploy.
 
 ---
 
@@ -131,7 +149,7 @@ holding the edge proxy and a one-command deploy.
 
 - **UI:** React 18, Vite 5, [Zustand](https://github.com/pmndrs/zustand) for the window-manager store.
 - **Intake engine:** [Zod](https://zod.dev) schemas + a pure deterministic brief builder; [jsPDF](https://github.com/parallax/jsPDF) (lazy-loaded) for the client-side PDF brief.
-- **Edge:** a Cloudflare Worker proxies the optional LLM summary (Groq), keeping the API key server-side and rate-limiting by IP.
+- **Edge / AI pipeline:** a Cloudflare Worker (KV rate-limited) that calls **Groq** (Llama 3.3) for tailored questions, runs client-tier detection + internal pricing server-side, and delivers qualified leads to **Discord** — API keys and margins never touch the browser.
 - **Type safety:** the manifest + window-store are strict-TypeScript-checked via `// @ts-check` + `tsc --noEmit` (see `src/types.d.ts`); ESLint + build run in CI.
 - **3D game:** three.js + cannon-es. Other games are hand-written vanilla JS/Canvas, each fully self-contained in `/public`.
 - **Backend:** a single PHP script (`leaderboard.php`) for shared high scores.
