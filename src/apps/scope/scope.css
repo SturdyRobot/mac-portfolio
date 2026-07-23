@@ -152,6 +152,17 @@
 .sg-note { font-size: 13px; color: #374151; margin: 16px 0 0; }
 .sg-note b { color: var(--ink); }
 
+/* AI-generated follow-up questions */
+.sg-thinking { font-size: 13px; color: var(--accent); margin: 18px 0 0; font-style: italic; }
+.sg-qa { margin-top: 22px; }
+.sg-qa-item { margin-bottom: 12px; }
+.sg-qa-q { font-size: 13px; font-weight: 650; color: var(--ink); margin-bottom: 6px; }
+.sg-qa-a {
+  width: 100%; box-sizing: border-box; border: 1.5px solid var(--line); border-radius: 10px;
+  padding: 9px 11px; font: inherit; font-size: 13px; resize: vertical; min-height: 40px; color: var(--ink);
+}
+.sg-qa-a:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-weak); }
+
 /* small screens */
 @media (max-width: 560px) {
   .sg-grid { grid-template-columns: 1fr; }

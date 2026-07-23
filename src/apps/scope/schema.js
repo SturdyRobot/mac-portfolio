@@ -47,6 +47,7 @@ export const Brief = z.object({
   lineItems: z.array(LineItem).min(1), // "what's typically involved" — no hours, no price
   summary: z.string(),
   summarySource: z.enum(['local', 'ai']),
+  questions: z.array(z.string()).default([]), // AI-generated follow-ups (empty without the LLM)
   budget: Budget,     // echoed back from intake, for the PDF / email
   deadline: Deadline,
   assumptions: z.array(z.string()),
@@ -54,6 +55,7 @@ export const Brief = z.object({
 })
 
 /** The shape the edge proxy must return; anything else is rejected. */
-export const AiSummary = z.object({
+export const AiReply = z.object({
   summary: z.string().trim().min(1).max(1200),
+  questions: z.array(z.string().trim().min(1).max(240)).max(4).default([]),
 })

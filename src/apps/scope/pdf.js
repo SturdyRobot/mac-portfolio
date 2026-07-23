@@ -14,8 +14,9 @@ const ACCENT = [37, 99, 235]
  * Generate and download a branded project brief.
  * @param {import('zod').infer<typeof import('./schema.js').Brief>} brief
  * @param {import('zod').infer<typeof import('./schema.js').Intake>} intake
+ * @param {Record<number, string>} [answers] answers to the AI follow-up questions
  */
-export async function downloadBrief(brief, intake) {
+export async function downloadBrief(brief, intake, answers = {}) {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
   const W = doc.internal.pageSize.getWidth()
@@ -74,6 +75,22 @@ export async function downloadBrief(brief, intake) {
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); setColor(INK)
   brief.lineItems.forEach((li) => { doc.text(`•  ${li.label}`, M, y); y += 17 })
   y += 8
+
+  // ── answered follow-ups ──
+  const answered = brief.questions
+    .map((q, i) => ({ q, a: String(answers[i] || '').trim() }))
+    .filter((x) => x.a)
+  if (answered.length) {
+    setColor(MUTE); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text('FOLLOW-UPS', M, y); y += 15
+    answered.forEach(({ q, a }) => {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10); setColor(INK)
+      doc.splitTextToSize(q, W - M * 2).forEach((line) => { doc.text(line, M, y); y += 13 })
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); setColor(MUTE)
+      doc.splitTextToSize(a, W - M * 2).forEach((line) => { doc.text(line, M, y); y += 13 })
+      y += 6
+    })
+    y += 4
+  }
 
   // ── client notes ──
   if (intake.brief) {

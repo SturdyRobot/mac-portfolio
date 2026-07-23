@@ -185,15 +185,21 @@ function Select({ label, hint, options, value, onPick, placeholder }) {
 function Result({ intake, brief, polishing, onReset }) {
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [answers, setAnswers] = useState({})
 
   const budgetLabel = brief.budget ? BUDGET_BY_ID[brief.budget].label : 'Not specified'
   const deadlineLabel = brief.deadline ? DEADLINE_BY_ID[brief.deadline].label : 'Not specified'
+
+  const answered = brief.questions
+    .map((q, i) => ({ q, a: (answers[i] || '').trim() }))
+    .filter((x) => x.a)
 
   const asText =
     `Project brief\n\n${brief.summary}\n\n` +
     `Includes:\n${brief.lineItems.map((l) => `• ${l.label}`).join('\n')}\n\n` +
     `Budget: ${budgetLabel}\nTimeline: ${deadlineLabel}\n` +
     (intake.brief ? `\nNotes: ${intake.brief}\n` : '') +
+    (answered.length ? `\nFollow-ups:\n${answered.map((x) => `• ${x.q}\n  ${x.a}`).join('\n')}\n` : '') +
     (intake.contact.name || intake.contact.company || intake.contact.email
       ? `\nFrom: ${[intake.contact.name, intake.contact.company, intake.contact.email].filter(Boolean).join(' · ')}` : '')
 
@@ -203,7 +209,7 @@ function Result({ intake, brief, polishing, onReset }) {
 
   async function pdf() {
     setBusy(true)
-    try { await downloadBrief(brief, intake) } finally { setBusy(false) }
+    try { await downloadBrief(brief, intake, answers) } finally { setBusy(false) }
   }
   function copy() {
     navigator.clipboard?.writeText(asText).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600) })
@@ -240,6 +246,28 @@ function Result({ intake, brief, polishing, onReset }) {
             </div>
           ))}
         </div>
+
+        {polishing && brief.questions.length === 0 ? (
+          <p className="sg-thinking">Thinking about what I&rsquo;d ask you…</p>
+        ) : null}
+
+        {brief.questions.length > 0 ? (
+          <div className="sg-qa">
+            <div className="sg-lines-label">A few things I&rsquo;d want to nail down</div>
+            {brief.questions.map((q, i) => (
+              <div className="sg-qa-item" key={i}>
+                <div className="sg-qa-q">{q}</div>
+                <textarea
+                  className="sg-qa-a"
+                  rows={2}
+                  placeholder="Your answer (optional — but it helps me quote faster)"
+                  value={answers[i] || ''}
+                  onChange={(e) => setAnswers((a) => ({ ...a, [i]: e.target.value }))}
+                />
+              </div>
+            ))}
+          </div>
+        ) : null}
 
         {intake.brief ? <p className="sg-note"><b>Your notes:</b> {intake.brief}</p> : null}
 

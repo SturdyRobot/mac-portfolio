@@ -48,6 +48,7 @@ export function buildBrief(rawIntake) {
     lineItems,
     summary: localSummary(intake),
     summarySource: /** @type {'local'} */ ('local'),
+    questions: /** @type {string[]} */ ([]), // filled by the AI layer when available
     budget: intake.budget,
     deadline: intake.deadline,
     assumptions: ASSUMPTIONS,

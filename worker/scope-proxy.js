@@ -14,7 +14,7 @@
 const DEFAULTS = {
   GROQ_MODEL: 'llama-3.3-70b-versatile',
   RATE_MAX: 5, // generations per IP per hour
-  MAX_TOKENS: 350,
+  MAX_TOKENS: 500,
 }
 
 export default {
@@ -62,10 +62,13 @@ export default {
       {
         role: 'system',
         content:
-          "You write a short summary of a prospective client's project for a freelance developer's intake form. " +
-          'Two to three sentences, warm and plain — no marketing hype, no bullet points, no headings. ' +
-          'Summarise what they want built. You MUST NOT mention, quote, or invent any price or cost. ' +
-          'You may acknowledge their timing if given. Write in the developer\'s voice (first person is fine).',
+          'You are a senior freelance software developer triaging a new project inquiry from an intake form. ' +
+          'Return a JSON object with two keys:\n' +
+          '• "summary": a warm, plain 2–3 sentence recap of what they want built, in the developer\'s voice ' +
+          '(first person is fine). No marketing hype, no headings. You MUST NOT mention, quote, or invent any price or cost.\n' +
+          '• "questions": an array of 2–3 sharp, specific follow-up questions THIS project would need answered before ' +
+          'it could be scoped — the kind a senior dev asks to de-risk the work. Tailor them to what they said; avoid ' +
+          'generic filler. Never ask about budget or price (already collected). Keep each under 140 characters.',
       },
       { role: 'user', content: facts },
     ]
@@ -81,8 +84,9 @@ export default {
         body: JSON.stringify({
           model: env.GROQ_MODEL || DEFAULTS.GROQ_MODEL,
           messages,
-          temperature: 0.4,
+          temperature: 0.5,
           max_tokens: DEFAULTS.MAX_TOKENS,
+          response_format: { type: 'json_object' },
         }),
       })
     } catch {
@@ -91,9 +95,17 @@ export default {
     if (!r.ok) return json({ error: 'upstream', status: r.status }, 502)
 
     const data = await r.json()
-    const summary = data?.choices?.[0]?.message?.content?.trim()
-    if (!summary) return json({ error: 'empty' }, 502)
+    const raw = data?.choices?.[0]?.message?.content
+    if (!raw) return json({ error: 'empty' }, 502)
 
-    return json({ summary: summary.slice(0, 1200) })
+    let parsed
+    try { parsed = JSON.parse(raw) } catch { return json({ error: 'bad_model_json' }, 502) }
+    const summary = String(parsed.summary || '').trim().slice(0, 1200)
+    if (!summary) return json({ error: 'empty' }, 502)
+    const questions = Array.isArray(parsed.questions)
+      ? parsed.questions.map((q) => String(q).trim().slice(0, 240)).filter(Boolean).slice(0, 3)
+      : []
+
+    return json({ summary, questions })
   },
 }
