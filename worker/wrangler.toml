@@ -1,0 +1,22 @@
+# Cloudflare Worker config for scope-proxy.
+# Deploy with:  npx wrangler deploy   (run from this folder)
+#
+# The Groq key is NEVER here — it's a secret:
+#   npx wrangler secret put GROQ_API_KEY
+
+name = "scope-proxy"
+main = "scope-proxy.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+ALLOW_ORIGIN = "https://sturdyrobot.io"
+GROQ_MODEL = "llama-3.3-70b-versatile"
+RATE_MAX = "5"
+
+# Per-IP rate-limit counter. Strongly recommended for a public endpoint.
+# 1. Create it:   npx wrangler kv namespace create SCOPE_KV
+# 2. Uncomment below and paste the printed id.
+# (Without this the proxy still runs, just without rate limiting.)
+# [[kv_namespaces]]
+# binding = "SCOPE_KV"
+# id = "PASTE_THE_ID_HERE"

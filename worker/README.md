@@ -23,27 +23,27 @@ client before it's shown.
 
 ## Deploy (~5 min)
 
-Prereqs: a free Cloudflare account, a free [Groq API key](https://console.groq.com), and `npx wrangler`.
+Config lives in `wrangler.toml`, so these are the only commands — run them **from
+this `worker/` folder**. Prereqs: a free Cloudflare account, a free
+[Groq API key](https://console.groq.com), and `npx wrangler`.
 
 ```sh
-# 1. from this folder
-npx wrangler deploy scope-proxy.js --name scope-proxy --compatibility-date 2024-11-01
+# 1. sign in to your Cloudflare account (opens a browser)
+npx wrangler login
 
-# 2. add the key as a secret (never a plain var)
-npx wrangler secret put GROQ_API_KEY --name scope-proxy
-
-# 3. create + bind a KV namespace for the rate counter
+# 2. (recommended) create the rate-limit store, then paste the printed id into
+#    wrangler.toml under [[kv_namespaces]] and uncomment that block
 npx wrangler kv namespace create SCOPE_KV
-#    then add the binding shown to the worker (dashboard → Settings → Variables → KV)
+
+# 3. add your Groq key as a secret — never a plain var, never committed
+npx wrangler secret put GROQ_API_KEY
+
+# 4. ship it
+npx wrangler deploy
 ```
 
-Optional plain vars (dashboard → Settings → Variables):
-
-| Var | Default | Purpose |
-|-----|---------|---------|
-| `ALLOW_ORIGIN` | `*` | lock CORS to `https://sturdyrobot.io` |
-| `GROQ_MODEL` | `llama-3.3-70b-versatile` | any Groq chat model |
-| `RATE_MAX` | `5` | generations per IP per hour |
+Tunables already set in `wrangler.toml` (edit there): `ALLOW_ORIGIN` (locks CORS
+to your domain), `GROQ_MODEL`, and `RATE_MAX` (generations per IP per hour).
 
 ## Wire it to the site
 
