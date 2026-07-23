@@ -17,7 +17,7 @@ export default function StartHere() {
       <p className="sh-lead">
         I&rsquo;m a software developer. I make apps, games, and small tools,
         mostly to find out whether an idea actually holds up. This site is one of
-        those experiments: a working classic Mac desktop where every icon is
+        those experiments: a working retro desktop OS where every icon is
         something I built. Open a few and have a look.
       </p>
 
@@ -61,7 +61,7 @@ export default function StartHere() {
       </div>
 
       <p className="sh-hint">
-        Everything lives in the <b>Apple menu</b>, up in the corner. Or just
+        Everything lives in the <b>🤖 menu</b>, up in the corner. Or just
         double-click the icons on the desktop.
       </p>
 

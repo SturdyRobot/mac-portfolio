@@ -117,7 +117,7 @@ export default function Window({ win }) {
         onPointerDown={onTitleDown}
         onDoubleClick={(e) => {
           if (e.target.closest('.ctl')) return
-          toggleCollapse(win.id) // classic Mac window-shade
+          toggleCollapse(win.id) // classic window-shade
         }}
       >
         <div className="title-ctls left" />

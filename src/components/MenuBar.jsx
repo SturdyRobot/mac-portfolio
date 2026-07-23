@@ -17,22 +17,9 @@ function Clock() {
   return <span className="menu-clock">{now}</span>
 }
 
-const AppleLogo = () => (
-  <svg width="14" height="16" viewBox="0 0 13 15" aria-label="Apple menu">
-    <defs>
-      <clipPath id="appleClip">
-        <path d="M9.6 8c0-1.5 1.2-2.2 1.3-2.3-.7-1-1.8-1.2-2.2-1.2-.9-.1-1.8.5-2.3.5s-1.2-.5-2-.5c-1 0-2 .6-2.5 1.5-1.1 1.9-.3 4.6.8 6.1.5.7 1.1 1.5 1.9 1.5.8 0 1-.5 2-.5s1.1.5 2 .5c.8 0 1.3-.7 1.8-1.4.4-.6.6-1.2.6-1.2s-1.7-.6-1.7-2.5zM8.1 3.6c.4-.5.7-1.2.6-1.9-.6 0-1.4.4-1.8.9-.4.4-.7 1.1-.6 1.8.7.1 1.4-.3 1.8-.8z" />
-      </clipPath>
-    </defs>
-    <g clipPath="url(#appleClip)">
-      <rect x="0" y="0" width="13" height="2.6" fill="#61bb46" />
-      <rect x="0" y="2.6" width="13" height="2.6" fill="#fdb827" />
-      <rect x="0" y="5.2" width="13" height="2.6" fill="#f5821f" />
-      <rect x="0" y="7.8" width="13" height="2.6" fill="#e03a3e" />
-      <rect x="0" y="10.4" width="13" height="2.6" fill="#963d97" />
-      <rect x="0" y="13" width="13" height="2.6" fill="#009ddc" />
-    </g>
-  </svg>
+// The corner logo — a robot, not an apple. This is Sturdy Robot OS.
+const RobotLogo = () => (
+  <span aria-label="Sturdy Robot menu" style={{ fontSize: 15, lineHeight: 1 }}>🤖</span>
 )
 
 const renderIcon = (icon) =>
@@ -117,16 +104,16 @@ export default function MenuBar() {
           className={`menu-item apple ${open === 'apple' ? 'active' : ''}`}
           onClick={() => toggle('apple')}
         >
-          <AppleLogo />
+          <RobotLogo />
         </span>
         {open === 'apple' && (
           <div className="menu-dropdown">
             <Row
-              label="About This Macintosh…"
+              label="About This Computer…"
               onClick={run(() =>
                 showDialog({
-                  icon: '🖥',
-                  title: 'Macintosh Portfolio',
+                  icon: '🤖',
+                  title: 'Sturdy Robot OS',
                   body: 'System 8 · built from scratch by Sturdy Robot. Memory: ∞.',
                 }),
               )}

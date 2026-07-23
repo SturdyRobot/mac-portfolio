@@ -1,6 +1,6 @@
 import { useOS } from '../store.js'
 
-// A classic Mac alert box, driven by store.dialog.
+// A classic retro-OS alert box, driven by store.dialog.
 export default function Dialog() {
   const dialog = useOS((s) => s.dialog)
   const closeDialog = useOS((s) => s.closeDialog)

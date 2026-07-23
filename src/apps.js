@@ -13,7 +13,7 @@
 //                      that refuse to be framed, like GitHub).
 //
 //  onDesktop: true   → shows an icon on the desktop.
-//  menu: true        → shows in the  Apple menu + File menu launchers.
+//  menu: true        → shows in the  🤖 menu + File menu launchers.
 //  (an app can be in the menus without cluttering the desktop.)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -95,7 +95,7 @@ export const apps = [
     component: PixelPet,
     window: { w: 336, h: 396, x: 340, y: 64 },
     chromeless: true, // egg-shaped floating widget, no window frame
-    onDesktop: false, // lives in the Apple menu → Toys
+    onDesktop: false, // lives in the 🤖 menu → Toys
     menu: true,
   },
   {
@@ -117,7 +117,7 @@ export const apps = [
     type: 'component',
     component: Appearance,
     window: { w: 360, h: 340, x: 240, y: 90 },
-    onDesktop: false, // lives in the Apple menu → Control Panels
+    onDesktop: false, // lives in the 🤖 menu → Control Panels
   },
   {
     id: 'about',
@@ -182,7 +182,7 @@ export const apps = [
     type: 'iframe',
     src: '/games/zenomon/index.html',
     window: { w: 760, h: 680, x: 120, y: 40 },
-    onDesktop: false, // menu-only (Apple menu → Games)
+    onDesktop: false, // menu-only (🤖 menu → Games)
     menu: true,
   },
   {
@@ -193,7 +193,7 @@ export const apps = [
     type: 'iframe',
     src: '/games/raid/index.html',
     window: { w: 900, h: 640, x: 110, y: 44 },
-    onDesktop: false, // menu-only (Apple menu → Games)
+    onDesktop: false, // menu-only (🤖 menu → Games)
     menu: true,
   },
   {

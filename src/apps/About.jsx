@@ -10,8 +10,9 @@ export default function About() {
       </p>
       <p>
         This desktop is a good example. It&rsquo;s a portfolio, but I wanted it to
-        be something you could actually use, so I made it a working Mac. Open the{' '}
-        <b>Web Browser</b> and it loads my real sites, right here on the desktop.
+        be something you could actually use, so I made it a working operating
+        system. Open the <b>Web Browser</b> and it loads my real sites, right here
+        on the desktop.
       </p>
       <p className="about-sig">
         Built by <b>Noel Jackson</b>

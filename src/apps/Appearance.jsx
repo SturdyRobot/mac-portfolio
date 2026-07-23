@@ -12,7 +12,7 @@ export default function Appearance() {
         <div className="cpanel-badge">🎨</div>
         <div>
           <h2>Appearance</h2>
-          <p className="cpanel-sub">Pick a flavor for your Macintosh.</p>
+          <p className="cpanel-sub">Pick a flavor for your desktop.</p>
         </div>
       </div>
 

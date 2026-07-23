@@ -37,7 +37,7 @@ export default function App() {
         <div className="shutdown-screen">
           <div className="shutdown-box">
             <div className="shutdown-face">◡</div>
-            <p>It is now safe to turn off your Macintosh.</p>
+            <p>It is now safe to turn off your computer.</p>
             <button className="btn" onClick={() => window.location.reload()}>
               Restart
             </button>
