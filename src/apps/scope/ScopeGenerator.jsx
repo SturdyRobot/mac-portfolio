@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import './scope.css'
 import {
-  PROJECT_TYPES, PROJECT_BY_ID, FEATURES, SCALES, DESIGNS,
+  PERSONAS, SIZES, PROJECT_TYPES, PROJECT_BY_ID, FEATURES, SCALES, DESIGNS,
   BUDGETS, BUDGET_BY_ID, DEADLINES, DEADLINE_BY_ID,
 } from './catalog.js'
 import { buildBrief } from './brief.js'
 import { polishSummary } from './summarize.js'
 import { downloadBrief } from './pdf.js'
+import { buildLead, submitLead } from './submit.js'
 import { SCOPE_PROXY } from './config.js'
 
 const EMPTY = {
+  persona: 'personal',
+  size: '',
   projectType: '',
   brief: '',
   features: [],
@@ -20,7 +23,8 @@ const EMPTY = {
   contact: { name: '', email: '', company: '' },
 }
 
-const STEPS = ['Project', 'Features', 'Details', 'You']
+const STEPS = ['Who', 'Project', 'Features', 'Details', 'Contact']
+const sizeOptions = SIZES.map((s) => ({ id: s.id, label: `${s.label} · ${s.detail}` }))
 
 export default function ScopeGenerator() {
   const [step, setStep] = useState(0)
@@ -39,8 +43,8 @@ export default function ScopeGenerator() {
     const brief = buildBrief(intake)
     setResult({ brief, polishing: !!SCOPE_PROXY })
     if (SCOPE_PROXY) {
-      polishSummary(intake, brief).then(({ summary, source }) =>
-        setResult((r) => (r ? { ...r, brief: { ...r.brief, summary, summarySource: source }, polishing: false } : r)),
+      polishSummary(intake, brief).then(({ summary, questions, source }) =>
+        setResult((r) => (r ? { ...r, brief: { ...r.brief, summary, questions, summarySource: source }, polishing: false } : r)),
       )
     }
   }
@@ -49,7 +53,7 @@ export default function ScopeGenerator() {
 
   if (result) return <Result intake={intake} brief={result.brief} polishing={result.polishing} onReset={reset} />
 
-  const canNext = step !== 0 || !!intake.projectType
+  const canNext = step !== 1 || !!intake.projectType
   const last = step === STEPS.length - 1
   const project = intake.projectType ? PROJECT_BY_ID[intake.projectType] : null
 
@@ -66,6 +70,29 @@ export default function ScopeGenerator() {
 
       <div className="sg-body">
         {step === 0 && (
+          <>
+            <h2 className="sg-q">Who&rsquo;s this for?</h2>
+            <div className="sg-grid">
+              {PERSONAS.map((p) => (
+                <button
+                  key={p.id}
+                  className={`sg-card${intake.persona === p.id ? ' sel' : ''}`}
+                  onClick={() => set({ persona: p.id, size: p.id === 'business' ? intake.size : '' })}
+                >
+                  <span className="sg-card-icon">{p.icon}</span>
+                  <span className="sg-card-label">{p.label}</span>
+                  <span className="sg-card-blurb">{p.blurb}</span>
+                </button>
+              ))}
+            </div>
+            {intake.persona === 'business' && (
+              <Select label="How big is the company?" hint="so I ask the right questions"
+                options={sizeOptions} value={intake.size} onPick={(id) => set({ size: id })} placeholder="Pick one" />
+            )}
+          </>
+        )}
+
+        {step === 1 && (
           <>
             <h2 className="sg-q">What are you building?</h2>
             <div className="sg-grid">
@@ -91,7 +118,7 @@ export default function ScopeGenerator() {
           </>
         )}
 
-        {step === 1 && (
+        {step === 2 && (
           <>
             <h2 className="sg-q">What does it need?</h2>
             <p className="sg-sub">Tap everything that applies. You can keep it lean.</p>
@@ -109,7 +136,7 @@ export default function ScopeGenerator() {
           </>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <>
             <h2 className="sg-q">A few details</h2>
             <Segment label="Scale" options={SCALES} value={intake.scale} onPick={(id) => set({ scale: id })} />
@@ -121,7 +148,7 @@ export default function ScopeGenerator() {
           </>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <>
             <h2 className="sg-q">Where should I send it?</h2>
             <p className="sg-sub">Leave an email and I&rsquo;ll follow up personally.</p>
@@ -186,6 +213,7 @@ function Result({ intake, brief, polishing, onReset }) {
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)
   const [answers, setAnswers] = useState({})
+  const [sent, setSent] = useState('') // '' | 'sending' | 'sent' | 'mailto'
 
   const budgetLabel = brief.budget ? BUDGET_BY_ID[brief.budget].label : 'Not specified'
   const deadlineLabel = brief.deadline ? DEADLINE_BY_ID[brief.deadline].label : 'Not specified'
@@ -214,13 +242,35 @@ function Result({ intake, brief, polishing, onReset }) {
   function copy() {
     navigator.clipboard?.writeText(asText).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1600) })
   }
+  async function send() {
+    setSent('sending')
+    const lead = buildLead(intake, brief, answers)
+    setSent(await submitLead(lead, mailto))
+  }
+
+  if (sent === 'sent') {
+    return (
+      <div className="sg sg-result">
+        <header className="sg-head"><div className="sg-brand"><span className="sg-logo">💼</span> Sent</div></header>
+        <div className="sg-body sg-done">
+          <div className="sg-done-mark">✓</div>
+          <h2 className="sg-q">Thanks{intake.contact.name ? `, ${intake.contact.name.split(' ')[0]}` : ''}!</h2>
+          <p className="sg-sub">Your brief just landed in my inbox — I&rsquo;ll be in touch soon. If it&rsquo;s urgent, email me at noeljacksonjs@gmail.com.</p>
+        </div>
+        <footer className="sg-foot sg-foot-result">
+          <button className="sg-btn ghost" onClick={onReset}>Start another</button>
+          <button className="sg-btn" onClick={pdf} disabled={busy}>{busy ? 'Building…' : 'Download a copy'}</button>
+        </footer>
+      </div>
+    )
+  }
 
   return (
     <div className="sg sg-result">
       <header className="sg-head">
         <div className="sg-brand"><span className="sg-logo">💼</span> Your brief</div>
         <span className={`sg-badge ${brief.summarySource === 'ai' ? 'ai' : ''}`}>
-          {polishing ? 'polishing…' : brief.summarySource === 'ai' ? 'AI-polished' : 'ready'}
+          {polishing ? 'thinking…' : brief.summarySource === 'ai' ? 'AI-tailored' : 'ready'}
         </span>
       </header>
 
@@ -241,9 +291,7 @@ function Result({ intake, brief, polishing, onReset }) {
         <div className="sg-lines-label">What&rsquo;s typically involved</div>
         <div className="sg-lines">
           {brief.lineItems.map((l) => (
-            <div className="sg-line" key={l.id}>
-              <span className="sg-line-label">{l.label}</span>
-            </div>
+            <div className="sg-line" key={l.id}><span className="sg-line-label">{l.label}</span></div>
           ))}
         </div>
 
@@ -260,13 +308,24 @@ function Result({ intake, brief, polishing, onReset }) {
                 <textarea
                   className="sg-qa-a"
                   rows={2}
-                  placeholder="Your answer (optional — but it helps me quote faster)"
+                  placeholder="Your answer (optional — but it helps me a lot)"
                   value={answers[i] || ''}
                   onChange={(e) => setAnswers((a) => ({ ...a, [i]: e.target.value }))}
                 />
               </div>
             ))}
           </div>
+        ) : null}
+
+        {brief.needs.length > 0 ? (
+          <>
+            <div className="sg-lines-label">What I&rsquo;ll need from you</div>
+            <div className="sg-lines">
+              {brief.needs.map((n, i) => (
+                <div className="sg-line" key={i}><span className="sg-line-label">{n}</span></div>
+              ))}
+            </div>
+          </>
         ) : null}
 
         {intake.brief ? <p className="sg-note"><b>Your notes:</b> {intake.brief}</p> : null}
@@ -281,8 +340,10 @@ function Result({ intake, brief, polishing, onReset }) {
         <button className="sg-btn ghost" onClick={onReset}>Start over</button>
         <div className="sg-nav">
           <button className="sg-btn ghost" onClick={copy}>{copied ? 'Copied ✓' : 'Copy'}</button>
-          <button className="sg-btn" onClick={pdf} disabled={busy}>{busy ? 'Building…' : 'Download PDF'}</button>
-          <a className="sg-btn primary" href={mailto}>Send to Noel →</a>
+          <button className="sg-btn" onClick={pdf} disabled={busy}>{busy ? 'Building…' : 'PDF'}</button>
+          <button className="sg-btn primary" onClick={send} disabled={sent === 'sending'}>
+            {sent === 'sending' ? 'Sending…' : sent === 'mailto' ? 'Opening email…' : 'Send to Noel →'}
+          </button>
         </div>
       </footer>
     </div>

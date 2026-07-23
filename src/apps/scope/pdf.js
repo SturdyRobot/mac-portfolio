@@ -76,6 +76,16 @@ export async function downloadBrief(brief, intake, answers = {}) {
   brief.lineItems.forEach((li) => { doc.text(`•  ${li.label}`, M, y); y += 17 })
   y += 8
 
+  // ── what I'll need from you ──
+  if (brief.needs?.length) {
+    setColor(MUTE); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text('WHAT I’LL NEED FROM YOU', M, y); y += 15
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); setColor(INK)
+    brief.needs.forEach((n) => {
+      doc.splitTextToSize(`•  ${n}`, W - M * 2).forEach((line) => { doc.text(line, M, y); y += 14 })
+    })
+    y += 8
+  }
+
   // ── answered follow-ups ──
   const answered = brief.questions
     .map((q, i) => ({ q, a: String(answers[i] || '').trim() }))

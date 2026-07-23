@@ -69,6 +69,46 @@ export const BUDGETS = [
   { id: 'unsure', label: 'Not sure yet' },
 ]
 
+/** Who the project is for — gates how deep the AI probes. */
+export const PERSONAS = [
+  { id: 'personal', label: 'Just me', icon: '🙋', blurb: 'A personal project or side idea.' },
+  { id: 'business', label: 'A business', icon: '🏢', blurb: 'For a company or client.' },
+]
+
+/** Company size (business only) — `depth` = how many follow-up questions the AI asks. */
+export const SIZES = [
+  { id: 'solo', label: 'Solo / freelancer', detail: 'just you', depth: 2 },
+  { id: 'small', label: 'Small team', detail: '2–20 people', depth: 3 },
+  { id: 'mid', label: 'Mid-size', detail: '20–200 people', depth: 4 },
+  { id: 'large', label: 'Large company', detail: '200+ people', depth: 5 },
+]
+
+/** What I'll need from the client — auto-derived from the features they pick. */
+export const NEEDS_BY_FEATURE = {
+  payments: 'A Stripe (or preferred processor) account',
+  cms: 'Your content, copy, and any imagery',
+  ai: 'Which LLM/provider you want (and an API key, or budget for one)',
+  api: 'Docs/credentials for the third-party service to integrate',
+  auth: 'Decision on sign-in methods (email, Google, SSO…)',
+  notifications: 'A sending domain/service for email (or I set one up)',
+  multiuser: 'Your team/roles model — who can do what',
+  i18n: 'The list of languages and who provides translations',
+}
+/** Always needed, regardless of features. */
+export const BASE_NEEDS = [
+  'Brand assets — logo, colors, fonts (or a blank slate to design from)',
+  'A primary point of contact for decisions & sign-off',
+]
+
+/** The delivery phases, with the share of the timeline each takes. */
+export const PHASES = [
+  { id: 'discovery', label: 'Discovery & scope', share: 0.12 },
+  { id: 'design', label: 'Design & prototype', share: 0.23 },
+  { id: 'build', label: 'Build', share: 0.4 },
+  { id: 'qa', label: 'QA & polish', share: 0.15 },
+  { id: 'launch', label: 'Launch & handoff', share: 0.1 },
+]
+
 /** When they need it done. */
 export const DEADLINES = [
   { id: 'asap', label: 'As soon as possible' },
@@ -89,6 +129,10 @@ export const BUDGET_BY_ID = byId(BUDGETS)
 export const BUDGET_IDS = BUDGETS.map((b) => b.id)
 export const DEADLINE_BY_ID = byId(DEADLINES)
 export const DEADLINE_IDS = DEADLINES.map((d) => d.id)
+export const PERSONA_BY_ID = byId(PERSONAS)
+export const PERSONA_IDS = PERSONAS.map((p) => p.id)
+export const SIZE_BY_ID = byId(SIZES)
+export const SIZE_IDS = SIZES.map((s) => s.id)
 
 export const PROJECT_IDS = PROJECT_TYPES.map((p) => p.id)
 export const FEATURE_IDS = FEATURES.map((f) => f.id)

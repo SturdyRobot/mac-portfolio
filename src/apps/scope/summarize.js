@@ -8,6 +8,13 @@
 // ═══════════════════════════════════════════════════════════════════
 import { AiReply } from './schema.js'
 import { SCOPE_PROXY } from './config.js'
+import { SIZE_BY_ID } from './catalog.js'
+
+// personal → 2 questions; business scales with company size.
+function questionDepth(intake) {
+  if (intake.persona !== 'business') return 2
+  return intake.size && SIZE_BY_ID[intake.size] ? SIZE_BY_ID[intake.size].depth : 3
+}
 
 /**
  * @param {import('zod').infer<typeof import('./schema.js').Intake>} intake
@@ -26,6 +33,9 @@ export async function polishSummary(intake, brief, { timeoutMs = 12000 } = {}) {
       headers: { 'content-type': 'application/json' },
       // just the project facts — no price is involved anywhere
       body: JSON.stringify({
+        persona: intake.persona,
+        size: intake.size,
+        questionCount: questionDepth(intake),
         projectType: intake.projectType,
         brief: intake.brief,
         features: intake.features,

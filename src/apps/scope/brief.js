@@ -3,8 +3,28 @@
 //  intake → validated Brief. No network, no price, no invented timeline.
 //  Deterministic: same intake always yields the same brief.
 // ═══════════════════════════════════════════════════════════════════
-import { PROJECT_BY_ID, FEATURE_BY_ID, SCALE_BY_ID } from './catalog.js'
+import {
+  PROJECT_BY_ID, FEATURE_BY_ID, SCALE_BY_ID,
+  NEEDS_BY_FEATURE, BASE_NEEDS, PHASES,
+} from './catalog.js'
 import { Intake, Brief } from './schema.js'
+
+const SCALE_WEEKS = { small: 3, medium: 6, large: 10 }
+
+// A rough, deterministic delivery schedule (internal planning aid — no price).
+function buildSchedule(intake) {
+  const total = Math.max(2, Math.round((SCALE_WEEKS[intake.scale] || 6) + intake.features.length * 0.8))
+  return PHASES.map((p) => {
+    const w = Math.max(1, Math.round(p.share * total))
+    return { label: p.label, weeks: w === 1 ? '~1 wk' : `~${w} wks` }
+  })
+}
+
+// What I'll need from the client — from their features, plus the constants.
+function buildNeeds(intake) {
+  const fromFeatures = intake.features.map((id) => NEEDS_BY_FEATURE[id]).filter(Boolean)
+  return [...fromFeatures, ...BASE_NEEDS]
+}
 
 // A friendly, deterministic recap of the project. Never mentions price.
 function localSummary(intake) {
@@ -49,6 +69,8 @@ export function buildBrief(rawIntake) {
     summary: localSummary(intake),
     summarySource: /** @type {'local'} */ ('local'),
     questions: /** @type {string[]} */ ([]), // filled by the AI layer when available
+    needs: buildNeeds(intake),
+    schedule: buildSchedule(intake),
     budget: intake.budget,
     deadline: intake.deadline,
     assumptions: ASSUMPTIONS,

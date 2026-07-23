@@ -38,7 +38,11 @@ npx wrangler kv namespace create SCOPE_KV
 # 3. add your Groq key as a secret — never a plain var, never committed
 npx wrangler secret put GROQ_API_KEY
 
-# 4. ship it
+# 4. lead delivery — paste a Discord (or Slack) webhook URL as a secret
+#    (Discord → channel → Edit → Integrations → Webhooks → New → Copy URL)
+npx wrangler secret put DISCORD_WEBHOOK
+
+# 5. ship it
 npx wrangler deploy
 ```
 

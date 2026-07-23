@@ -11,6 +11,7 @@
 import { z } from 'zod'
 import {
   PROJECT_IDS, FEATURE_IDS, SCALE_IDS, DESIGN_IDS, BUDGET_IDS, DEADLINE_IDS,
+  PERSONA_IDS, SIZE_IDS,
 } from './catalog.js'
 
 // enums are derived from the catalog, so schema + catalog can't drift
@@ -20,6 +21,8 @@ export const Scale = z.enum(SCALE_IDS)
 export const Design = z.enum(DESIGN_IDS)
 export const Budget = z.enum(BUDGET_IDS).or(z.literal('')) // optional — '' = not shared
 export const Deadline = z.enum(DEADLINE_IDS).or(z.literal(''))
+export const Persona = z.enum(PERSONA_IDS)
+export const Size = z.enum(SIZE_IDS).or(z.literal('')) // business only
 
 export const Contact = z.object({
   name: z.string().trim().max(80).default(''),
@@ -28,6 +31,8 @@ export const Contact = z.object({
 })
 
 export const Intake = z.object({
+  persona: Persona.default('personal'),
+  size: Size.default(''),
   projectType: ProjectType,
   brief: z.string().trim().max(600).default(''),
   features: z.array(FeatureId).default([]),
@@ -43,11 +48,18 @@ export const LineItem = z.object({
   label: z.string(),
 })
 
+export const Phase = z.object({
+  label: z.string(),
+  weeks: z.string(), // human range like "1–2 wks"
+})
+
 export const Brief = z.object({
   lineItems: z.array(LineItem).min(1), // "what's typically involved" — no hours, no price
   summary: z.string(),
   summarySource: z.enum(['local', 'ai']),
   questions: z.array(z.string()).default([]), // AI-generated follow-ups (empty without the LLM)
+  needs: z.array(z.string()).default([]),     // what I'll need from the client (client-facing)
+  schedule: z.array(Phase).default([]),       // delivery phases (internal — for Noel)
   budget: Budget,     // echoed back from intake, for the PDF / email
   deadline: Deadline,
   assumptions: z.array(z.string()),
