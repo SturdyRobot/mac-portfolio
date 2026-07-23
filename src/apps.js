@@ -39,7 +39,7 @@ export const apps = [
     icon: '👋',
     type: 'component',
     component: StartHere,
-    window: { w: 440, h: 500, x: 60, y: 46 },
+    window: { w: 460, h: 690, x: 60, y: 46 }, // tall enough to show all content on open
     onDesktop: false, // auto-opens on load — no icon needed
     menu: true,
   },
