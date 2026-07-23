@@ -19,10 +19,11 @@ const DEFAULTS = {
 
 // ── internal estimate (Noel-only; computed here so the client never sees it) ──
 // Placeholder numbers — adjust to your real rates. Rate varies by build type.
-const HOURS_BASE = { landing: 18, webapp: 64, aitool: 52, automation: 40, ecommerce: 58, game: 46 }
+const HOURS_BASE = { landing: 18, webapp: 64, rag: 48, extractor: 40, aitool: 52, automation: 40, localai: 50, game: 46 }
 const FEATURE_HOURS = { auth: 14, payments: 18, dashboard: 22, cms: 16, ai: 26, api: 12, realtime: 20, admin: 18, search: 12, notifications: 10, multiuser: 24, i18n: 12 }
 const SCALE_MULT = { small: 0.85, medium: 1.0, large: 1.35 }
-const RATE_BY_TYPE = { landing: 95, webapp: 120, aitool: 150, automation: 110, ecommerce: 120, game: 120 } // $/hr
+// rate varies by what's being built — AI / compliance work commands more ($/hr)
+const RATE_BY_TYPE = { landing: 95, webapp: 120, rag: 150, extractor: 135, aitool: 150, automation: 110, localai: 160, game: 120 }
 const TIER_MULT = { indie: 0.9, startup: 1.0, mid_market: 1.25, enterprise: 1.5 }
 const PUBLIC_EMAIL = new Set(['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com', 'me.com', 'proton.me', 'protonmail.com', 'aol.com', 'live.com'])
 

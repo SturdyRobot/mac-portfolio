@@ -13,12 +13,14 @@ export const BAND = 0.12
 
 /** Project archetypes — the base build (scaffolding, deploy, QA) in hours. */
 export const PROJECT_TYPES = [
-  { id: 'landing',    label: 'Landing / marketing site', icon: '🌐', base: 18, blurb: 'A polished single site to convert visitors.' },
-  { id: 'webapp',     label: 'Web app (SaaS-style)',     icon: '🧩', base: 64, blurb: 'A real product with accounts and data.' },
-  { id: 'aitool',     label: 'AI-powered tool',          icon: '🤖', base: 52, blurb: 'An LLM feature wired into a usable UI.' },
-  { id: 'automation', label: 'Workflow automation',      icon: '⚙️', base: 40, blurb: 'Connect systems, remove manual steps.' },
-  { id: 'ecommerce',  label: 'E-commerce store',         icon: '🛒', base: 58, blurb: 'Catalog, cart, checkout, the works.' },
-  { id: 'game',       label: 'Browser game / interactive', icon: '🎮', base: 46, blurb: 'Something people actually want to play.' },
+  { id: 'landing',    label: 'Landing / marketing site',   icon: '🌐', base: 18, blurb: 'A polished single site to convert visitors.' },
+  { id: 'webapp',     label: 'Web app (SaaS-style)',       icon: '🧩', base: 64, blurb: 'A real product with accounts and data.' },
+  { id: 'rag',        label: 'AI knowledge base / chatbot', icon: '💬', base: 48, blurb: 'Search & chat with your docs, PDFs, or support data.' },
+  { id: 'extractor',  label: 'AI data extractor / scraper', icon: '🗂️', base: 40, blurb: 'Turn messy PDFs, emails, or sites into clean data.' },
+  { id: 'aitool',     label: 'AI tool / agent',            icon: '🤖', base: 52, blurb: 'A custom LLM agent or feature in a usable UI.' },
+  { id: 'automation', label: 'Workflow automation',        icon: '⚙️', base: 40, blurb: 'Connect systems, remove manual steps.' },
+  { id: 'localai',    label: 'Private / local AI setup',   icon: '🔒', base: 50, blurb: 'Run AI on your own hardware — full data privacy.' },
+  { id: 'game',       label: 'Interactive / game',         icon: '🎮', base: 46, blurb: 'Something people actually want to play.' },
 ]
 
 /** Optional feature modules — added effort in hours. */
