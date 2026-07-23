@@ -29,6 +29,16 @@ export function buildLead(intake, brief, answers = {}) {
     qa,
     notes: intake.brief || '',
     contact: intake.contact,
+    // raw ids so the Worker can compute the internal estimate + tier server-side
+    // (the client never receives or sees a price)
+    raw: {
+      persona: intake.persona,
+      size: intake.size,
+      projectType: intake.projectType,
+      features: intake.features,
+      scale: intake.scale,
+      email: intake.contact.email,
+    },
   }
 }
 

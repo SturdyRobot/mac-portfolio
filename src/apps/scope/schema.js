@@ -69,5 +69,5 @@ export const Brief = z.object({
 /** The shape the edge proxy must return; anything else is rejected. */
 export const AiReply = z.object({
   summary: z.string().trim().min(1).max(1200),
-  questions: z.array(z.string().trim().min(1).max(240)).max(4).default([]),
+  questions: z.array(z.string().trim().min(1).max(240)).max(8).default([]),
 })

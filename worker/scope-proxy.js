@@ -14,11 +14,49 @@
 const DEFAULTS = {
   GROQ_MODEL: 'llama-3.3-70b-versatile',
   RATE_MAX: 5, // generations per IP per hour
-  MAX_TOKENS: 500,
+  MAX_TOKENS: 800, // room for up to ~8 tailored questions + summary
+}
+
+// ── internal estimate (Noel-only; computed here so the client never sees it) ──
+// Placeholder numbers — adjust to your real rates. Rate varies by build type.
+const HOURS_BASE = { landing: 18, webapp: 64, aitool: 52, automation: 40, ecommerce: 58, game: 46 }
+const FEATURE_HOURS = { auth: 14, payments: 18, dashboard: 22, cms: 16, ai: 26, api: 12, realtime: 20, admin: 18, search: 12, notifications: 10, multiuser: 24, i18n: 12 }
+const SCALE_MULT = { small: 0.85, medium: 1.0, large: 1.35 }
+const RATE_BY_TYPE = { landing: 95, webapp: 120, aitool: 150, automation: 110, ecommerce: 120, game: 120 } // $/hr
+const TIER_MULT = { indie: 0.9, startup: 1.0, mid_market: 1.25, enterprise: 1.5 }
+const PUBLIC_EMAIL = new Set(['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com', 'me.com', 'proton.me', 'protonmail.com', 'aol.com', 'live.com'])
+
+function detectTier(raw) {
+  if (!raw || raw.persona !== 'business') return { tier: 'indie', why: 'personal project' }
+  const bySize = { solo: 'indie', small: 'startup', mid: 'mid_market', large: 'enterprise' }
+  let tier = bySize[raw.size] || 'startup'
+  const domain = (String(raw.email || '').split('@')[1] || '').toLowerCase()
+  const why = []
+  if (domain && !PUBLIC_EMAIL.has(domain)) why.push(`corporate domain @${domain}`)
+  if (domain && PUBLIC_EMAIL.has(domain)) { why.push(`personal email @${domain}`); if (tier === 'enterprise') tier = 'mid_market' } // guard vs false-enterprise
+  why.push(`self-reported: ${raw.size || 'unspecified'}`)
+  return { tier, why: why.join(' · ') }
+}
+
+function computeEstimate(raw) {
+  if (!raw || !HOURS_BASE[raw.projectType]) return null
+  const featureHours = (raw.features || []).reduce((s, id) => s + (FEATURE_HOURS[id] || 0), 0)
+  const hours = Math.round((HOURS_BASE[raw.projectType] + featureHours) * (SCALE_MULT[raw.scale] || 1))
+  const { tier, why } = detectTier(raw)
+  const rate = RATE_BY_TYPE[raw.projectType] || 120
+  const point = hours * rate * (TIER_MULT[tier] || 1)
+  const round = (n) => Math.round(n / 250) * 250
+  const usd = (n) => `$${n.toLocaleString('en-US')}`
+  return {
+    tier, why,
+    range: `${usd(round(point * 0.88))} – ${usd(round(point * 1.15))}`,
+    detail: `~${hours}h · ${raw.projectType} @ $${rate}/h · ${tier} ×${TIER_MULT[tier]}`,
+  }
 }
 
 // Format a submitted lead as a rich Discord embed. Robust to missing fields.
 function discordPayload(lead) {
+  const est = computeEstimate(lead.raw)
   const trunc = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s }
   const who = [lead.contact?.name, lead.contact?.company].filter(Boolean).join(' · ') || 'Someone'
   const persona = lead.persona === 'business' ? `Business${lead.size ? ` · ${lead.size}` : ''}` : 'Personal'
@@ -33,6 +71,7 @@ function discordPayload(lead) {
   ]
   if (lead.qa?.length) fields.push({ name: 'Follow-up answers', value: trunc(lead.qa.map((x) => `**${x.q}**\n${x.a}`).join('\n\n'), 1024) })
   if (lead.notes) fields.push({ name: 'Their notes', value: trunc(lead.notes, 1024) })
+  if (est) fields.unshift({ name: `💰 Internal estimate — ${est.tier}`, value: trunc(`**${est.range}**\n${est.detail}\n_tier: ${est.why}_`, 1024) })
   return {
     content: `📥 **New project lead** — ${trunc(lead.projectType || 'project', 60)}`,
     embeds: [{
@@ -91,7 +130,10 @@ export default {
     }
 
     // ── otherwise: generate the summary + tailored questions ──
-    const depth = Math.max(2, Math.min(5, Number(body.questionCount) || 3))
+    // The AI decides how many questions the project actually needs, within a
+    // range that widens with company size.
+    const rangeBySize = { '': [3, 5], solo: [2, 4], small: [3, 5], mid: [4, 6], large: [5, 8] }
+    const [qLo, qHi] = body.persona === 'business' ? (rangeBySize[body.size || ''] || [3, 5]) : [2, 4]
     const persona = body.persona === 'business'
       ? `a business${body.size ? ` (${body.size})` : ''}` : 'a personal project'
     const facts = [
@@ -112,9 +154,10 @@ export default {
           'Return a JSON object with two keys:\n' +
           '• "summary": a warm, plain 2–3 sentence recap of what they want built, in the developer\'s voice ' +
           '(first person is fine). No marketing hype, no headings. You MUST NOT mention, quote, or invent any price or cost.\n' +
-          `• "questions": an array of exactly ${depth} sharp, specific follow-up questions THIS project would need ` +
-          'answered before it could be scoped. Tailor them to what they said; avoid generic filler. For larger ' +
-          'organisations, go deeper — stakeholders, existing systems/integrations, compliance, procurement, scale. ' +
+          '• "questions": the follow-up questions THIS specific project genuinely needs answered before it could be ' +
+          `scoped — ask as many as it actually takes to de-risk it (aim for ${qLo}–${qHi}; use the high end for complex ` +
+          'or enterprise builds, fewer only if it is genuinely simple). Tailor to what they said; no generic filler. ' +
+          'For larger organisations probe stakeholders, existing systems/integrations, compliance, procurement, scale. ' +
           'Never ask about budget or price (already collected). Keep each under 140 characters.',
       },
       { role: 'user', content: facts },
@@ -150,7 +193,7 @@ export default {
     const summary = String(parsed.summary || '').trim().slice(0, 1200)
     if (!summary) return json({ error: 'empty' }, 502)
     const questions = Array.isArray(parsed.questions)
-      ? parsed.questions.map((q) => String(q).trim().slice(0, 240)).filter(Boolean).slice(0, 3)
+      ? parsed.questions.map((q) => String(q).trim().slice(0, 240)).filter(Boolean).slice(0, qHi)
       : []
 
     return json({ summary, questions })
