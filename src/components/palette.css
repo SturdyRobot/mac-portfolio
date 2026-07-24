@@ -1,0 +1,37 @@
+/* ⌘K command palette — dark, matches the Executive Surface, floats over both layers */
+.cmdk-overlay {
+  position: fixed; inset: 0; z-index: 200000;
+  background: rgba(3, 7, 12, 0.55); backdrop-filter: blur(3px);
+  display: flex; align-items: flex-start; justify-content: center; padding-top: 14vh;
+  animation: cmdk-fade 0.12s ease-out;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+}
+@keyframes cmdk-fade { from { opacity: 0; } to { opacity: 1; } }
+.cmdk {
+  width: min(560px, 92vw);
+  background: #0f1521; border: 1px solid #26334a; border-radius: 14px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  overflow: hidden; animation: cmdk-rise 0.16s ease-out;
+}
+@keyframes cmdk-rise { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+.cmdk-input-row { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid #1e293b; }
+.cmdk-prompt {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; color: #38bdf8;
+  background: #131c2b; border: 1px solid #26334a; border-radius: 6px; padding: 3px 7px;
+}
+.cmdk-input { flex: 1; background: none; border: 0; outline: none; color: #f8fafc; font-size: 16px; font-family: inherit; }
+.cmdk-input::placeholder { color: #5b6b82; }
+.cmdk-esc { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #5b6b82; border: 1px solid #26334a; border-radius: 5px; padding: 2px 6px; }
+.cmdk-list { max-height: 360px; overflow-y: auto; padding: 8px; }
+.cmdk-empty { padding: 18px; text-align: center; color: #5b6b82; font-size: 14px; }
+.cmdk-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  background: none; border: 0; border-radius: 9px; padding: 11px 12px; cursor: pointer;
+  color: #e6edf5; font-size: 14.5px; font-family: inherit;
+}
+.cmdk-item.on { background: #182236; }
+.cmdk-icon { width: 26px; text-align: center; font-family: ui-monospace, Menlo, monospace; font-size: 14px; color: #8b98ad; flex: none; }
+.cmdk-item.on .cmdk-icon { color: #38bdf8; }
+.cmdk-label { flex: 1; font-weight: 500; }
+.cmdk-hint { color: #5b6b82; font-size: 12.5px; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .cmdk-overlay, .cmdk { animation: none; } }

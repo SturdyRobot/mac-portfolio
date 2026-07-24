@@ -40,6 +40,33 @@ export const useOS = create(
   iconSort: 'default', // default | name | kind
   setIconSort: (iconSort) => set({ iconSort }),
 
+  // ─── Two-layer shell: Executive Surface (Layer 1) ↔ NLJ OS (Layer 2) ───
+  // The dark landing page is the default; the retro OS launches over it. Synced
+  // to ?os=true so the workstation is deep-linkable.
+  os: typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('os') === 'true',
+  launchOS: () => {
+    try {
+      const u = new URL(window.location.href)
+      u.searchParams.set('os', 'true')
+      window.history.replaceState({}, '', u)
+    } catch { /* ignore */ }
+    set({ os: true, palette: false })
+  },
+  exitOS: () => {
+    try {
+      const u = new URL(window.location.href)
+      u.searchParams.delete('os')
+      window.history.replaceState({}, '', u)
+    } catch { /* ignore */ }
+    set({ os: false, palette: false })
+  },
+
+  // ─── Command palette (⌘K / Ctrl+K) — works in both layers ───
+  palette: false,
+  openPalette: () => set({ palette: true }),
+  closePalette: () => set({ palette: false }),
+  togglePalette: () => set((s) => ({ palette: !s.palette })),
+
   // ─── Guided tour (the 60-second recruiter auto-tour) ───
   tour: false,
   startTour: () => set({ tour: true }),
