@@ -39,7 +39,7 @@ export const apps = [
     icon: '👋',
     type: 'component',
     component: StartHere,
-    window: { w: 460, h: 690, x: 60, y: 46 }, // tall enough to show all content on open
+    window: { w: 470, h: 606, x: 60, y: 46 }, // snug fit for the whole showcase, no scroll
     onDesktop: false, // auto-opens on load — no icon needed
     menu: true,
   },
@@ -77,13 +77,14 @@ export const apps = [
     menu: true,
   },
   {
-    id: 'sturdyharness',
-    name: 'SturdyHarness',
-    category: 'GitHub',
+    id: 'kedge',
+    name: 'Kedge',
+    category: 'Projects',
     icon: '🦀',
-    type: 'link', // opens the repo in a new tab (GitHub can't be framed)
-    src: 'https://github.com/SturdyRobot/sturdy-harness',
-    onDesktop: false, // menu-only (also listed inside Projects)
+    type: 'iframe', // the real Rust engine, compiled to wasm and run in-window
+    src: '/kedge/index.html',
+    window: { w: 720, h: 580, x: 110, y: 50 },
+    onDesktop: true, // it actually runs — worth a desktop icon
     menu: true,
   },
   {

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kedge — deterministic agent engine, running in your browser</title>
+<style>
+  :root {
+    --bg: #0b0e14; --panel: #11151f; --edge: #1e2633;
+    --fg: #c9d4e5; --dim: #6b7789; --accent: #5ac8fa;
+    --think: #b48ead; --act: #ebcb8b; --obs: #a3be8c; --done: #5ac8fa;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: var(--mono); padding: 16px;
+  }
+  .head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+  h1 { font-size: 15px; font-weight: 700; letter-spacing: .04em; margin: 0; }
+  .src { margin-left: auto; font-size: 11px; color: var(--accent); text-decoration: none; }
+  .src:hover { text-decoration: underline; }
+  .sub { color: var(--dim); font-size: 11.5px; margin: 0 0 14px; line-height: 1.5; }
+  .sub b { color: var(--accent); font-weight: 600; }
+  .term { background: var(--panel); border: 1px solid var(--edge); border-radius: 8px; overflow: hidden; }
+  .bar { display: flex; align-items: center; gap: 7px; padding: 8px 12px; border-bottom: 1px solid var(--edge); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .r { background: #ff5f57; } .y { background: #febc2e; } .g { background: #28c840; }
+  .bar .t { color: var(--dim); font-size: 11px; margin-left: 4px; }
+  .io { padding: 12px; }
+  .prompt-row { display: flex; gap: 8px; }
+  input {
+    flex: 1; min-width: 0; background: #0a0d13; border: 1px solid var(--edge);
+    border-radius: 5px; color: var(--fg); font-family: var(--mono); font-size: 12px; padding: 8px 10px;
+  }
+  input:focus { outline: none; border-color: var(--accent); }
+  button {
+    background: var(--accent); color: #04121c; border: 0; border-radius: 5px;
+    font-family: var(--mono); font-weight: 700; font-size: 12px; padding: 0 14px; cursor: pointer;
+  }
+  button:disabled { opacity: .5; cursor: default; }
+  .log { margin-top: 12px; font-size: 12px; line-height: 1.5; }
+  .step { opacity: 0; transform: translateY(4px); animation: rise .28s forwards; margin-bottom: 11px; }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+  .phase { font-weight: 700; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+  .think .phase { color: var(--think); } .act .phase { color: var(--act); }
+  .tool { color: var(--act); }
+  .meta { color: var(--dim); }
+  .answer { border-top: 1px dashed var(--edge); margin-top: 4px; padding-top: 10px; color: var(--done); }
+  .stat { display: flex; gap: 14px; color: var(--dim); font-size: 10.5px; margin-top: 8px; flex-wrap: wrap; }
+  .stat b { color: var(--fg); font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <h1>Kedge</h1>
+    <a class="src" href="https://github.com/SturdyRobot/kedge" target="_blank" rel="noopener">source ↗</a>
+  </div>
+  <p class="sub">A deterministic ReAct engine written in Rust — compiled to WebAssembly and running <b>entirely in this window</b>. No server, no API key, no network.</p>
+
+  <div class="term">
+    <div class="bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="t">kedge · wasm32-unknown-unknown</span></div>
+    <div class="io">
+      <div class="prompt-row">
+        <input id="goal" value="Refactor the auth module and add tests" spellcheck="false" />
+        <button id="run" disabled>Run</button>
+      </div>
+      <div class="log" id="log"></div>
+      <div class="stat" id="stat" hidden>
+        <span>steps <b id="s-steps">0</b></span>
+        <span>tokens <b id="s-tokens">0</b></span>
+        <span>engine <b>kedge-core</b></span>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import init, { WasmKedgeAgent } from "./pkg/kedge_web.js";
+
+    const $ = (id) => document.getElementById(id);
+    const log = $("log"), stat = $("stat");
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+    init().then(() => { $("run").disabled = false; })
+          .catch((e) => { log.innerHTML = `<div class="step"><span class="meta">failed to load wasm: ${esc(e)}</span></div>`; });
+
+    function renderStep(step) {
+      const t = document.createElement("div");
+      t.className = "step think";
+      t.innerHTML = `<div class="phase">Think</div><div>${esc(step.thought)}</div>`;
+      log.appendChild(t);
+
+      // `Action` is internally tagged: {kind:"tool", name, arguments} | {kind:"finish", answer}
+      const a = document.createElement("div");
+      if (step.action.kind === "tool") {
+        a.className = "step act";
+        a.innerHTML = `<div class="phase">Act</div>` +
+          `<div>→ <span class="tool">${esc(step.action.name)}</span>` +
+          `<span class="meta"> ${esc(JSON.stringify(step.action.arguments))}</span></div>` +
+          (step.observation ? `<div><span class="phase" style="color:var(--obs)">Observe</span> ${esc(step.observation.content)}</div>` : "");
+      } else if (step.action.kind === "finish") {
+        a.className = "step answer";
+        a.innerHTML = `<div class="phase" style="color:var(--done)">Finish</div><div>${esc(step.action.answer)}</div>`;
+      }
+      log.appendChild(a);
+    }
+
+    $("run").addEventListener("click", async () => {
+      $("run").disabled = true;
+      log.innerHTML = ""; stat.hidden = true;
+      const goal = $("goal").value.trim() || "Do the task";
+
+      const agent = new WasmKedgeAgent('{"max_steps":6}');
+      const steps = [];
+      const answer = await agent.execute(goal, (json) => steps.push(JSON.parse(json)));
+
+      let tokens = 0;
+      for (const step of steps) {
+        renderStep(step);
+        tokens += step.tokens || 0;
+        $("s-steps").textContent = step.index + 1;
+        $("s-tokens").textContent = tokens;
+        stat.hidden = false;
+        await sleep(500);
+      }
+      $("run").disabled = false;
+    });
+  </script>
+</body>
+</html>

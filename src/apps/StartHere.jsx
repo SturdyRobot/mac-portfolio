@@ -1,6 +1,9 @@
 import { useOS } from '../store.js'
 
-// The first thing a visitor sees — says who I am, what I make, and where to go.
+// The first thing a recruiter or client sees. Job: in ~30 seconds — who I am,
+// what level, my edge, proof it's real, and one obvious next step.
+const STACK = ['React', 'Rust', 'Cloudflare', 'three.js', 'TypeScript']
+
 export default function StartHere() {
   const openApp = useOS((s) => s.openApp)
 
@@ -8,73 +11,64 @@ export default function StartHere() {
     <div className="starthere">
       <div className="sh-hero">
         <div className="sh-badge">🤖</div>
-        <div>
+        <div className="sh-hero-text">
           <h1 className="sh-name">Noel Jackson</h1>
-          <p className="sh-role">Software Developer · “Sturdy Robot”</p>
+          <p className="sh-role">AI-native software engineer</p>
         </div>
       </div>
 
       <p className="sh-lead">
-        I&rsquo;m a software developer. I make apps, games, and small tools,
-        mostly to find out whether an idea actually holds up. This site is one of
-        those experiments: a working retro desktop OS where every icon is
-        something I built. Open a few and have a look.
+        I ship <b>production software solo</b> — desktop, web, and edge —
+        directing AI to build and maintain more than one developer normally could.
       </p>
 
-      <div className="sh-section-label">Start here</div>
+      <div className="sh-tags">
+        {STACK.map((t) => <span className="sh-tag" key={t}>{t}</span>)}
+      </div>
+
+      <button className="sh-cta" onClick={() => openApp('scope')}>
+        <span>Hire me — start a project</span>
+        <span className="sh-cta-arrow">→</span>
+      </button>
+
+      <div className="sh-section-label">Featured work</div>
       <div className="sh-actions">
         <button className="sh-card" onClick={() => openApp('worldframe')}>
           <span className="sh-card-emoji">🌍</span>
           <span className="sh-card-text">
             <b>WorldFrame</b>
-            <small>The app I spend most of my time on.</small>
+            <small>My flagship — a desktop worldbuilding app, live and in users&rsquo; hands. Tauri&nbsp;+&nbsp;Rust.</small>
           </span>
+          <span className="sh-card-tag live">Live ↗</span>
         </button>
-        <button className="sh-card" onClick={() => openApp('sturdyharness')}>
+        <button className="sh-card" onClick={() => openApp('kedge')}>
           <span className="sh-card-emoji">🦀</span>
           <span className="sh-card-text">
-            <b>SturdyHarness</b>
-            <small>A deterministic AI-agent harness in Rust. Source on GitHub.</small>
+            <b>Kedge</b>
+            <small>A deterministic AI-agent harness in Rust — compiled to WebAssembly. Runs right here.</small>
           </span>
+          <span className="sh-card-tag live">Run it</span>
         </button>
-        <button className="sh-card" onClick={() => openApp('playground')}>
-          <span className="sh-card-emoji">🚗</span>
+        <button className="sh-card" onClick={() => openApp('hub')}>
+          <span className="sh-card-emoji">🐙</span>
           <span className="sh-card-text">
-            <b>RC Playground</b>
-            <small>A small driving game. 3D physics with three.js + cannon-es.</small>
+            <b>All projects</b>
+            <small>Every app, tool, and game — each one running right here.</small>
           </span>
-        </button>
-        <button className="sh-card" onClick={() => openApp('bitboy')}>
-          <span className="sh-card-emoji">🎮</span>
-          <span className="sh-card-text">
-            <b>BitBoy</b>
-            <small>A handheld I built. Jungle Run and Snake are loaded.</small>
-          </span>
-        </button>
-        <button className="sh-card" onClick={() => openApp('about')}>
-          <span className="sh-card-emoji">👤</span>
-          <span className="sh-card-text">
-            <b>About Me</b>
-            <small>The short version, and where to find me.</small>
-          </span>
+          <span className="sh-card-tag arrow">→</span>
         </button>
       </div>
 
       <p className="sh-hint">
-        Everything lives in the <b>🤖 menu</b>, up in the corner. Or just
-        double-click the icons on the desktop.
+        This whole site is a <b>working OS I built</b> — every icon is real. Open a few and poke around.
       </p>
 
       <div className="sh-links">
         <a href="mailto:noeljacksonjs@gmail.com">noeljacksonjs@gmail.com</a>
         <span className="sh-dot">·</span>
-        <a href="https://github.com/SturdyRobot" target="_blank" rel="noopener noreferrer">
-          github.com/SturdyRobot
-        </a>
+        <a href="https://github.com/SturdyRobot" target="_blank" rel="noopener noreferrer">GitHub&nbsp;↗</a>
         <span className="sh-dot">·</span>
-        <a href="https://tryworldframe.com" target="_blank" rel="noopener noreferrer">
-          tryworldframe.com
-        </a>
+        <a href="https://tryworldframe.com" target="_blank" rel="noopener noreferrer">tryworldframe.com&nbsp;↗</a>
       </div>
     </div>
   )

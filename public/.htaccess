@@ -5,3 +5,9 @@
     Header set Cache-Control "no-cache, must-revalidate, max-age=0"
   </FilesMatch>
 </IfModule>
+
+# Serve WebAssembly with the correct MIME type so the Kedge demo can use
+# WebAssembly.instantiateStreaming instead of the slower arrayBuffer fallback.
+<IfModule mod_mime.c>
+  AddType application/wasm .wasm
+</IfModule>

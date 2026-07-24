@@ -6,3 +6,9 @@ dist/
 
 # local editor / agent tooling
 .claude/
+
+# stray Aegis ledgers (aegis_compact defaults to cwd)
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+.wrangler/
