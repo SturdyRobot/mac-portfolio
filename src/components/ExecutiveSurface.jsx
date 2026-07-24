@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useOS } from '../store.js'
 import { downloadResume } from '../apps/hire/resume.js'
 import './surface.css'
@@ -53,42 +53,6 @@ const TELEMETRY = {
   pct: 58.7, // reduction on the showcased file
 }
 
-// count-up animation for the telemetry hero number
-function useCountUp(target, ms = 1400, start = false) {
-  const [n, setN] = useState(0)
-  const raf = useRef(0)
-  useEffect(() => {
-    if (!start) return
-    let t0
-    const tick = (t) => {
-      if (!t0) t0 = t
-      const p = Math.min(1, (t - t0) / ms)
-      const eased = 1 - Math.pow(1 - p, 3)
-      setN(Math.round(target * eased))
-      if (p < 1) raf.current = requestAnimationFrame(tick)
-    }
-    raf.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf.current)
-  }, [target, ms, start])
-  return n
-}
-
-// reveal telemetry count only once it scrolls into view
-function useInView() {
-  const ref = useRef(null)
-  const [seen, setSeen] = useState(false)
-  useEffect(() => {
-    if (!ref.current || seen) return
-    const io = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setSeen(true); io.disconnect() } },
-      { threshold: 0.4 },
-    )
-    io.observe(ref.current)
-    return () => io.disconnect()
-  }, [seen])
-  return [ref, seen]
-}
-
 export default function ExecutiveSurface() {
   const launchOS = useOS((s) => s.launchOS)
   const openPalette = useOS((s) => s.openPalette)
@@ -117,9 +81,9 @@ export default function ExecutiveSurface() {
       <main className="xs-main">
         {/* ── hero ── */}
         <section className="xs-hero">
-          <div className="xs-eyebrow">● AVAILABLE FOR STAFF / PRINCIPAL ROLES</div>
+          <div className="xs-eyebrow"><span className="xs-avail" />Available for Staff &amp; Principal roles</div>
           <h1 className="xs-h1">
-            NOEL JACKSON III
+            Noel Jackson <span className="xs-h1-iii">III</span>
             <span className="xs-h1-sub">Systems &amp; AI Infrastructure Engineer</span>
           </h1>
           <p className="xs-lead">
@@ -147,13 +111,15 @@ export default function ExecutiveSurface() {
             <div className="xs-monitor-screen">
               <div className="xs-status">
                 <span className="xs-pulse" />
-                SYSTEM ONLINE: <b>NLJ-OS v2.4</b> <span className="xs-muted">(Rust / WASM substrate)</span>
+                <span className="xs-status-label">system online</span>
+                <b>NLJ-OS v2.4</b>
+                <span className="xs-muted">rust / wasm substrate</span>
               </div>
-              <pre className="xs-boot-hint">{`> the whole desktop is a real OS I built.
-> its terminal runs kedge_core::classify — real Rust,
-> compiled to WebAssembly — live in your browser.`}</pre>
+              <pre className="xs-boot-hint">{`the whole desktop is a real OS I built.
+its terminal runs kedge_core::classify — real Rust,
+compiled to WebAssembly — live in your browser.`}</pre>
               <button className="xs-launch" onClick={launchOS}>
-                ⚡ Launch NLJ OS Workstation
+                Launch NLJ OS Workstation <span className="xs-launch-arrow">→</span>
               </button>
             </div>
           </div>
@@ -162,8 +128,8 @@ export default function ExecutiveSurface() {
         {/* ── featured systems architecture ── */}
         <section className="xs-section" id="work">
           <div className="xs-section-head">
-            <span className="xs-section-kicker">02 — FEATURED SYSTEMS ARCHITECTURE</span>
-            <h2 className="xs-h2">Two systems, both real, both running.</h2>
+            <span className="xs-section-kicker">Selected work</span>
+            <h2 className="xs-h2">Two systems. Both real, both running.</h2>
           </div>
 
           {/* Flagship 1: Kedge + real diff preview */}
@@ -234,8 +200,8 @@ export default function ExecutiveSurface() {
           </div>
           <div className="xs-footer-links">
             <a href="mailto:noel@nlj.dev">noel@nlj.dev</a>
-            <a href="https://github.com/nlj3" target="_blank" rel="noopener noreferrer">GitHub @nlj3 ↗</a>
-            <button className="xs-link-btn" onClick={launchOS}>Launch NLJ OS ⚡</button>
+            <a href="https://github.com/nlj3" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+            <button className="xs-link-btn" onClick={launchOS}>Launch NLJ OS →</button>
           </div>
         </footer>
       </main>
@@ -244,17 +210,15 @@ export default function ExecutiveSurface() {
 }
 
 function Telemetry() {
-  const [ref, seen] = useInView()
-  const tokens = useCountUp(TELEMETRY.tokensSaved, 1500, seen)
   return (
-    <section className="xs-section" id="telemetry" ref={ref}>
+    <section className="xs-section" id="telemetry">
       <div className="xs-section-head">
-        <span className="xs-section-kicker">03 — LIVE METRICS · MEASURED FROM THE LEDGER</span>
+        <span className="xs-section-kicker">Measured — from the ledger</span>
         <h2 className="xs-h2">Verifiable, not vibes.</h2>
       </div>
       <div className="xs-metrics">
         <div className="xs-metric">
-          <div className="xs-metric-n">{tokens.toLocaleString()}</div>
+          <div className="xs-metric-n">{TELEMETRY.tokensSaved.toLocaleString()}</div>
           <div className="xs-metric-l">Tokens compacted <span className="xs-muted">(cumulative, measured)</span></div>
         </div>
         <div className="xs-metric">
