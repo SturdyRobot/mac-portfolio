@@ -81,12 +81,13 @@
   .ext{ display:inline-flex; align-items:center; gap:4px }
 
   /* contributions */
-  .contrib{ margin-top:30px; border:1px solid var(--border); border-radius:6px; padding:16px }
-  .contrib h4{ margin:0 0 12px; font-size:13px; font-weight:400; color:var(--muted) }
-  .graph{ display:grid; grid-auto-flow:column; grid-template-rows:repeat(7,11px); gap:3px; overflow-x:auto; padding-bottom:4px }
-  .cell{ width:11px; height:11px; border-radius:2px; background:#161b22 }
-  .legend{ display:flex; align-items:center; gap:6px; justify-content:flex-end;
-    color:var(--muted); font-size:11px; margin-top:10px }
+  .grid + .section-title{ margin-top:30px }
+  .shipped{ display:flex; flex-direction:column; gap:8px }
+  .ship{ display:flex; align-items:baseline; gap:12px; text-decoration:none; color:inherit;
+    border:1px solid var(--border); border-radius:6px; padding:12px 14px; background:var(--bg2) }
+  .ship:hover{ border-color:var(--link) }
+  .ship-what{ flex:1; font-size:13px; color:var(--muted); line-height:1.5 }
+  .ship-what b{ color:var(--text); font-weight:600 }
 
   .foot{ max-width:1000px; margin:0 auto; padding:0 16px 40px; color:var(--muted); font-size:12px; text-align:center }
 
@@ -154,17 +155,21 @@
       <div class="section-title">📌 Pinned</div>
       <div class="grid" id="repos"></div>
 
-      <!-- contribution graph -->
-      <div class="contrib">
-        <h4 id="contrib-title">Contribution activity</h4>
-        <div class="graph" id="graph"></div>
-        <div class="legend">Less
-          <span class="cell" style="background:#161b22"></span>
-          <span class="cell" style="background:#0e4429"></span>
-          <span class="cell" style="background:#006d32"></span>
-          <span class="cell" style="background:#26a641"></span>
-          <span class="cell" style="background:#39d353"></span>
-          More</div>
+      <!-- recently shipped — real, verifiable milestones (each links to proof) -->
+      <div class="section-title">🚀 Recently shipped</div>
+      <div class="shipped">
+        <a class="ship" href="https://crates.io/crates/kedge" target="_blank" rel="noopener noreferrer">
+          <span class="ship-what"><b>Kedge → crates.io</b> — published the deterministic AI-agent harness (BUSL-1.1). Its classifier runs, compiled to WebAssembly, in the Kedge app on this desktop.</span>
+          <span class="ext">↗ crates.io</span>
+        </a>
+        <a class="ship" href="https://tryworldframe.com" target="_blank" rel="noopener noreferrer">
+          <span class="ship-what"><b>WorldFrame</b> — shipped the desktop app (macOS + Windows) with auto-update proven in production. Real users, real purchases.</span>
+          <span class="ext">↗ tryworldframe.com</span>
+        </a>
+        <a class="ship" href="https://github.com/nlj3/mac-portfolio" target="_blank" rel="noopener noreferrer">
+          <span class="ship-what"><b>nlj.dev</b> — this working desktop OS. The terminal runs Kedge's real engine in your browser; the source is one click away.</span>
+          <span class="ext">↗ github.com</span>
+        </a>
       </div>
     </main>
   </div>
@@ -180,9 +185,9 @@
     { name:'mac-portfolio', lang:'JavaScript', color:'var(--js)', badge:'Public',
       desc:'This desktop. A portfolio built as a working retro desktop OS — a pluggable app + game platform.',
       href:'https://github.com/nlj3/mac-portfolio', ext:'github.com' },
-    { name:'ai-intake-pipeline', lang:'JavaScript · Zod', color:'var(--js)', badge:'in mac-portfolio',
-      desc:'Adaptive client intake → an LLM asks the questions each project actually needs → a tier-classified, priced lead lands in Discord — pricing computed server-side so the client never sees it. Groq + Cloudflare Worker, Zod-validated end to end.',
-      href:'https://github.com/nlj3/mac-portfolio/tree/main/src/apps/scope', ext:'source' },
+    { name:'edge-llm-proxy', lang:'JavaScript · Cloudflare', color:'var(--js)', badge:'in mac-portfolio',
+      desc:'A prompt-injection-hardened Cloudflare Worker fronting an LLM at the edge — per-IP rate limiting, honeypot, body-size caps, and untrusted intake framed so it can never override the system prompt. Powers the Hire Me flow on this site.',
+      href:'https://github.com/nlj3/mac-portfolio/tree/main/worker', ext:'source' },
     { name:'worldframe', lang:'Rust · React', color:'var(--react)', badge:'Product',
       desc:'Worldbuilding app for writers & TTRPG creators. My flagship — a Tauri desktop app.',
       href:'https://tryworldframe.com', ext:'tryworldframe.com' },
@@ -209,32 +214,6 @@
       '</div>';
     grid.appendChild(a);
   });
-
-  // ── contribution graph: deterministic (seeded LCG), decorative texture ──
-  const LEVELS = ['#161b22','#0e4429','#006d32','#26a641','#39d353'];
-  let seed = 1337;
-  const rnd = () => (seed = (seed*1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
-  const g = document.getElementById('graph');
-  const WEEKS = 52;
-  let count = 0;
-  for(let w=0; w<WEEKS; w++){
-    for(let d=0; d<7; d++){
-      const cell = document.createElement('span');
-      cell.className = 'cell';
-      // busier in the middle of the week, a few quiet stretches
-      const r = rnd();
-      let lvl = 0;
-      if(r > 0.42) lvl = 1;
-      if(r > 0.62) lvl = 2;
-      if(r > 0.80) lvl = 3;
-      if(r > 0.92) lvl = 4;
-      cell.style.background = LEVELS[lvl];
-      count += lvl;
-      g.appendChild(cell);
-    }
-  }
-  document.getElementById('contrib-title').textContent =
-    'Contribution activity — the last year';
 </script>
 </body>
 </html>
