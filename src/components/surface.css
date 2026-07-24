@@ -166,6 +166,31 @@
 .xs-code.compacted { color: #7f8798; }
 .xs-code code { background: none; padding: 0; margin: 0; border-radius: 0; font: inherit; color: inherit; }
 
+/* ── live compactor ── */
+.lc-sub { max-width: 640px; margin: 14px 0 0; color: var(--muted); font-size: 14.5px; line-height: 1.6; }
+.lc-sub b { color: var(--fg); font-weight: 600; }
+.lc { margin-top: 26px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #0b0b0d; }
+.lc-bar {
+  display: flex; flex-wrap: wrap; gap: 10px 22px; padding: 12px 16px; border-bottom: 1px solid var(--line);
+  font-family: var(--mono); font-size: 12px; color: var(--muted);
+}
+.lc-stat { white-space: nowrap; }
+.lc-stat b { color: var(--fg); font-weight: 500; }
+.lc-stat i { color: var(--faint); font-style: normal; }
+.lc-led { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--faint); margin-right: 7px; vertical-align: middle; }
+.lc-stat.ok .lc-led { background: var(--green); }
+.lc-stat.err { color: #d98a86; }
+.lc-stat.err .lc-led { background: #d9534f; }
+.lc-panes { display: grid; grid-template-columns: 1fr 1fr; }
+.lc-pane { min-width: 0; }
+.lc-pane:last-child { border-left: 1px solid var(--line); }
+.lc-label { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.lc-code { margin: 0; padding: 14px; font-family: var(--mono); font-size: 12px; line-height: 1.62; tab-size: 4; white-space: pre; overflow: auto; height: 330px; box-sizing: border-box; }
+.lc-input { width: 100%; background: #0b0b0d; color: #c6ccd6; border: 0; resize: none; outline: none; display: block; }
+.lc-input:focus { background: #0c0c0f; }
+.lc-output { color: #838b9a; background: #09090b; }
+.lc-output code { background: none; padding: 0; margin: 0; border-radius: 0; color: inherit; font: inherit; }
+
 /* ── telemetry — an editorial stat row, not cards ── */
 .xs-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; }
 .xs-metric { border-top: 1px solid var(--line-2); padding-top: 20px; }
@@ -196,5 +221,8 @@
   .xs-metrics { grid-template-columns: 1fr 1fr; gap: 22px; }
   .xs-nav-links a { display: none; }
   .xs-card-head { flex-direction: column; gap: 12px; }
+  .lc-panes { grid-template-columns: 1fr; }
+  .lc-pane:last-child { border-left: 0; border-top: 1px solid var(--line); }
+  .lc-code { height: 240px; }
 }
 @media (prefers-reduced-motion: reduce) { .xs, .xs-pulse { animation: none; } }

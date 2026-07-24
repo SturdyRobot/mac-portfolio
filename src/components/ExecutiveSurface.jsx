@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useOS } from '../store.js'
 import { downloadResume } from '../apps/hire/resume.js'
+import LiveCompactor from './LiveCompactor.jsx'
 import './surface.css'
 
 // ── Layer 1: the Executive Engineering Surface ──
@@ -100,6 +101,9 @@ export default function ExecutiveSurface() {
             </button>
           </div>
         </section>
+
+        {/* ── the live substrate (real Tree-sitter compaction) ── */}
+        <LiveCompactor />
 
         {/* ── workstation trigger ── */}
         <section className="xs-workstation">
