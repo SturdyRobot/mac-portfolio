@@ -49,6 +49,33 @@ export class WasmKedgeAgent {
 if (Symbol.dispose) WasmKedgeAgent.prototype[Symbol.dispose] = WasmKedgeAgent.prototype.free;
 
 /**
+ * Shadow-Guard, live in the browser. Runs the **real** `kedge_core::classify`
+ * — the exact fail-safe classifier the audit executor uses — against whatever
+ * the visitor types, and reports whether Kedge would let an agent run it or
+ * intercept it. Returns JSON: `{command, verb, verdict, risk, intercepted}`.
+ *
+ * This is deliberately not scripted: the output is computed from the input, so
+ * a skeptic can type anything (including their own destructive commands) and
+ * watch the actual safety logic decide.
+ * @param {string} command
+ * @returns {string}
+ */
+export function classify_command(command) {
+    let deferred2_0;
+    let deferred2_1;
+    try {
+        const ptr0 = passStringToWasm0(command, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.classify_command(ptr0, len0);
+        deferred2_0 = ret[0];
+        deferred2_1 = ret[1];
+        return getStringFromWasm0(ret[0], ret[1]);
+    } finally {
+        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
  * Install the panic hook once so a Rust panic surfaces as `console.error`
  * instead of an opaque `unreachable` trap. Safe to call more than once.
  */

@@ -45,7 +45,7 @@ export default function StartHere() {
           <span className="sh-card-emoji">🦀</span>
           <span className="sh-card-text">
             <b>Kedge</b>
-            <small>A deterministic AI-agent harness in Rust — compiled to WebAssembly. Runs right here.</small>
+            <small>A deterministic AI-agent harness in Rust. It intercepts unsafe actions before they run — try it live.</small>
           </span>
           <span className="sh-card-tag live">Run it</span>
         </button>
