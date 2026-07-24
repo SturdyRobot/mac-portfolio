@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useOS } from '../store.js'
 import { downloadResume } from '../apps/hire/resume.js'
 import LiveCompactor from './LiveCompactor.jsx'
+import CrateGraph from './CrateGraph.jsx'
 import './surface.css'
 
 // ── Layer 1: the Executive Engineering Surface ──
@@ -104,6 +105,9 @@ export default function ExecutiveSurface() {
 
         {/* ── the live substrate (real Tree-sitter compaction) ── */}
         <LiveCompactor />
+
+        {/* ── real crate dependency graph ── */}
+        <CrateGraph />
 
         {/* ── workstation trigger ── */}
         <section className="xs-workstation">
