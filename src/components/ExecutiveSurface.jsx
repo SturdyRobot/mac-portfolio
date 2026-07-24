@@ -3,6 +3,7 @@ import { useOS } from '../store.js'
 import { downloadResume } from '../apps/hire/resume.js'
 import LiveCompactor from './LiveCompactor.jsx'
 import CrateGraph from './CrateGraph.jsx'
+import DeepDives from './DeepDives.jsx'
 import './surface.css'
 
 // ── Layer 1: the Executive Engineering Surface ──
@@ -196,6 +197,9 @@ compiled to WebAssembly — live in your browser.`}</pre>
             </a>
           </article>
         </section>
+
+        {/* ── engineering deep dives ── */}
+        <DeepDives />
 
         {/* ── live telemetry ── */}
         <Telemetry />

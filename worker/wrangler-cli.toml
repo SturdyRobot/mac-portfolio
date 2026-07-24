@@ -1,0 +1,7 @@
+name = "nlj-cli"
+main = "cli-worker.js"
+compatibility_date = "2024-11-01"
+
+# No secrets or bindings — it only proxies public GitHub key endpoints.
+# Deploy:  npx wrangler deploy --config wrangler-cli.toml
+# See README-cli.md for mapping cli.nlj.dev (subdomain delegation to Cloudflare).
