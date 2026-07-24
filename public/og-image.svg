@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#d68140"/>
+      <stop offset="1" stop-color="#ac541e"/>
+    </linearGradient>
+    <linearGradient id="title" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbfbfc"/>
+      <stop offset="1" stop-color="#dfe2e6"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- menu-bar hint -->
+  <circle cx="26" cy="22" r="6" fill="#c9502a"/>
+  <text x="46" y="28" font-size="16" font-weight="bold" fill="#3a2a1e" opacity="0.85">File    Edit    View    Special</text>
+
+  <!-- window shadow + frame -->
+  <rect x="150" y="108" width="902" height="418" rx="11" fill="#00000022"/>
+  <rect x="148" y="100" width="902" height="418" rx="11" fill="#f2efe6" stroke="#b0aa9c" stroke-width="1"/>
+
+  <!-- title bar -->
+  <path d="M148 111 a11 11 0 0 1 11 -11 h880 a11 11 0 0 1 11 11 v33 h-902 z" fill="url(#title)" stroke="#b0aa9c" stroke-width="1"/>
+  <text x="599" y="132" text-anchor="middle" font-size="18" font-weight="bold" fill="#2b2b2b" letter-spacing="1">nlj OS</text>
+  <rect x="169" y="117" width="16" height="16" rx="2" fill="#e9e2d0" stroke="#8a8072"/>
+  <rect x="1013" y="117" width="16" height="16" rx="2" fill="#e9e2d0" stroke="#8a8072"/>
+
+  <!-- app icon (the classic-Mac mascot, from the favicon) -->
+  <g transform="translate(198,186) scale(4.375)" shape-rendering="crispEdges">
+    <rect width="32" height="32" rx="6" fill="#c96a2b"/>
+    <rect x="7" y="5" width="18" height="22" rx="2" fill="#e9e2d0"/>
+    <rect x="7" y="5" width="18" height="22" rx="2" fill="none" stroke="#4a4034" stroke-width="1"/>
+    <rect x="9" y="7" width="14" height="10" fill="#2f6b4f"/>
+    <rect x="10" y="8" width="12" height="8" fill="#57e389"/>
+    <rect x="12" y="10" width="2" height="2" fill="#173d2b"/>
+    <rect x="18" y="10" width="2" height="2" fill="#173d2b"/>
+    <rect x="12" y="13" width="8" height="1" fill="#173d2b"/>
+    <rect x="13" y="14" width="6" height="1" fill="#173d2b"/>
+    <rect x="18" y="19" width="5" height="1.5" fill="#8a8072"/>
+    <rect x="9" y="19" width="6" height="1" fill="#b7ad9a"/>
+    <rect x="9" y="21" width="6" height="1" fill="#b7ad9a"/>
+    <rect x="9" y="23" width="6" height="1" fill="#b7ad9a"/>
+  </g>
+
+  <!-- name + role -->
+  <text x="366" y="252" font-size="60" font-weight="bold" fill="#1a1a1a">Noel Jackson</text>
+  <text x="368" y="300" font-size="29" font-weight="bold" fill="#c25e26">Systems &amp; AI Infrastructure Engineer</text>
+
+  <!-- tagline -->
+  <text x="205" y="382" font-size="24" fill="#3a352c">Rust · WebAssembly · AI infrastructure — a working OS in your browser.</text>
+
+  <!-- badges -->
+  <g font-size="23" font-weight="bold" fill="#3a352c">
+    <rect x="205" y="414" width="122" height="46" rx="9" fill="#eae5d8" stroke="#c3bca9"/>
+    <text x="266" y="444" text-anchor="middle">Kedge</text>
+    <rect x="341" y="414" width="210" height="46" rx="9" fill="#eae5d8" stroke="#c3bca9"/>
+    <text x="446" y="444" text-anchor="middle">WorldFrame</text>
+    <rect x="565" y="414" width="205" height="46" rx="9" fill="#eae5d8" stroke="#c3bca9"/>
+    <text x="667" y="444" text-anchor="middle">Live engine</text>
+  </g>
+
+  <!-- domain -->
+  <text x="1013" y="498" text-anchor="end" font-size="28" font-weight="bold" fill="#1a1a1a">▸ nlj.dev</text>
+</svg>
