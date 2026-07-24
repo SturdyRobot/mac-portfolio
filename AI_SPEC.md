@@ -1,6 +1,6 @@
 # AI_SPEC — how this repo is built
 
-This project is built **AI-native**: I ([Noel Jackson](https://sturdyrobot.io)) own the
+This project is built **AI-native**: I ([Noel Jackson](https://nlj.dev)) own the
 architecture, the product decisions, and the review; I direct an AI coding agent —
 **Claude Code** — to do implementation, asset generation, and verification under that
 direction. This document is an honest account of *how*, not a marketing claim.
@@ -88,7 +88,7 @@ The pattern in both: **I own the boundary; the agent works inside it.**
 
 ## Verification, not vibes
 
-The tooling I build reflects the same principle. [SturdyHarness](https://github.com/SturdyRobot/sturdy-harness)
+The tooling I build reflects the same principle. [Aegis](https://github.com/nlj3/aegis)
 runs AI agents under hard budgets with byte-identical replay, so an agent's effect is
 reproducible and checkable rather than a matter of trust. In this repo the equivalent
 discipline is two things:

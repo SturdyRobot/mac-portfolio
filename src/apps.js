@@ -28,7 +28,7 @@ import PixelPetIcon from './components/PixelPetIcon.jsx'
 import HighScores from './apps/HighScores.jsx'
 import StartHere from './apps/StartHere.jsx'
 import Terminal from './apps/Terminal.jsx'
-import ScopeGenerator from './apps/scope/ScopeGenerator.jsx'
+import HireMe from './apps/hire/HireMe.jsx'
 
 /** @type {import('./types').AppManifest[]} */
 export const apps = [
@@ -45,13 +45,13 @@ export const apps = [
   },
   {
     id: 'scope',
-    name: 'Hire Noel',
+    name: 'Hire Me',
     category: 'Apps',
-    icon: '💼',
+    icon: '🤝',
     type: 'component',
-    component: ScopeGenerator,
-    window: { w: 760, h: 640, x: 90, y: 40 },
-    onDesktop: true, // the CTA — scope a project & get a quote
+    component: HireMe,
+    window: { w: 720, h: 640, x: 90, y: 40 },
+    onDesktop: true, // interview me → tailored approach + live engine
     menu: true,
   },
   {

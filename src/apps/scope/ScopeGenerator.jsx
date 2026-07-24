@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './scope.css'
 import {
   PERSONAS, SIZES, PROJECT_TYPES, PROJECT_BY_ID, FEATURES, SCALES, DESIGNS,
@@ -21,15 +21,32 @@ const EMPTY = {
   budget: '',
   deadline: '',
   contact: { name: '', email: '', company: '' },
+  website: '', // honeypot — stays empty for real humans
 }
 
 const STEPS = ['Who', 'Project', 'Features', 'Details', 'Contact']
 const sizeOptions = SIZES.map((s) => ({ id: s.id, label: `${s.label} · ${s.detail}` }))
 
+// A refresh or accidental app-switch shouldn't wipe a half-written brief.
+const DRAFT_KEY = 'sturdy_intake_draft_v1'
+function loadDraft() {
+  try {
+    const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null')
+    return d && typeof d === 'object' ? d : null
+  } catch { return null }
+}
+function clearDraft() { try { localStorage.removeItem(DRAFT_KEY) } catch { /* ignore */ } }
+
 export default function ScopeGenerator() {
-  const [step, setStep] = useState(0)
-  const [intake, setIntake] = useState(EMPTY)
+  const draft = loadDraft()
+  const [step, setStep] = useState(draft?.step ?? 0)
+  const [intake, setIntake] = useState({ ...EMPTY, ...(draft?.intake || {}), contact: { ...EMPTY.contact, ...(draft?.intake?.contact || {}) } })
   const [result, setResult] = useState(null)
+
+  // Persist the in-progress wizard on every change (their own device; cheap).
+  useEffect(() => {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ step, intake })) } catch { /* ignore */ }
+  }, [step, intake])
 
   const set = (patch) => setIntake((s) => ({ ...s, ...patch }))
   const setContact = (patch) => setIntake((s) => ({ ...s, contact: { ...s.contact, ...patch } }))
@@ -49,9 +66,9 @@ export default function ScopeGenerator() {
     }
   }
 
-  const reset = () => { setIntake(EMPTY); setResult(null); setStep(0) }
+  const reset = () => { clearDraft(); setIntake(EMPTY); setResult(null); setStep(0) }
 
-  if (result) return <Result intake={intake} brief={result.brief} polishing={result.polishing} onReset={reset} />
+  if (result) return <Result intake={intake} brief={result.brief} polishing={result.polishing} onReset={reset} onComplete={clearDraft} />
 
   const canNext = step !== 1 || !!intake.projectType
   const last = step === STEPS.length - 1
@@ -159,6 +176,10 @@ export default function ScopeGenerator() {
                 onChange={(e) => setContact({ company: e.target.value })} />
               <input className="sg-input" type="email" placeholder="Email" value={intake.contact.email}
                 onChange={(e) => setContact({ email: e.target.value })} />
+              {/* honeypot: off-screen + aria-hidden so no human sees or tabs to it; bots that
+                  autofill "website" get silently dropped by the Worker. */}
+              <input className="sg-hp" type="text" name="website" tabIndex={-1} autoComplete="off"
+                aria-hidden="true" value={intake.website} onChange={(e) => set({ website: e.target.value })} />
             </div>
           </>
         )}
@@ -209,7 +230,7 @@ function Select({ label, hint, options, value, onPick, placeholder }) {
   )
 }
 
-function Result({ intake, brief, polishing, onReset }) {
+function Result({ intake, brief, polishing, onReset, onComplete }) {
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)
   const [answers, setAnswers] = useState({})
@@ -232,8 +253,8 @@ function Result({ intake, brief, polishing, onReset }) {
       ? `\nFrom: ${[intake.contact.name, intake.contact.company, intake.contact.email].filter(Boolean).join(' · ')}` : '')
 
   const mailto =
-    `mailto:noeljacksonjs@gmail.com?subject=${encodeURIComponent('Project inquiry — ' + PROJECT_BY_ID[intake.projectType].label)}` +
-    `&body=${encodeURIComponent(asText + '\n\n— sent from the project form on sturdyrobot.io')}`
+    `mailto:noel@nlj.dev?subject=${encodeURIComponent('Project inquiry — ' + PROJECT_BY_ID[intake.projectType].label)}` +
+    `&body=${encodeURIComponent(asText + '\n\n— sent from the project form on nlj.dev')}`
 
   async function pdf() {
     setBusy(true)
@@ -245,7 +266,9 @@ function Result({ intake, brief, polishing, onReset }) {
   async function send() {
     setSent('sending')
     const lead = buildLead(intake, brief, answers)
-    setSent(await submitLead(lead, mailto))
+    const outcome = await submitLead(lead, mailto)
+    if (outcome === 'sent' || outcome === 'mailto') onComplete?.() // lead is out — drop the saved draft
+    setSent(outcome)
   }
 
   if (sent === 'sent') {
@@ -255,7 +278,7 @@ function Result({ intake, brief, polishing, onReset }) {
         <div className="sg-body sg-done">
           <div className="sg-done-mark">✓</div>
           <h2 className="sg-q">Thanks{intake.contact.name ? `, ${intake.contact.name.split(' ')[0]}` : ''}!</h2>
-          <p className="sg-sub">Your brief just landed in my inbox — I&rsquo;ll be in touch soon. If it&rsquo;s urgent, email me at noeljacksonjs@gmail.com.</p>
+          <p className="sg-sub">Your brief just landed in my inbox — I&rsquo;ll be in touch soon. If it&rsquo;s urgent, email me at noel@nlj.dev.</p>
         </div>
         <footer className="sg-foot sg-foot-result">
           <button className="sg-btn ghost" onClick={onReset}>Start another</button>

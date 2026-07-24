@@ -1,10 +1,10 @@
-# Sturdy Robot — a portfolio built as a working Macintosh
+# Noel Jackson — a portfolio built as a working Macintosh
 
-[![CI](https://github.com/SturdyRobot/mac-portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/SturdyRobot/mac-portfolio/actions/workflows/ci.yml)
+[![CI](https://github.com/nlj3/mac-portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/nlj3/mac-portfolio/actions/workflows/ci.yml)
 &nbsp;[![Built AI-native](https://img.shields.io/badge/built-AI--native-1f6feb)](AI_SPEC.md)
-&nbsp;[![Live: sturdyrobot.io](https://img.shields.io/badge/live-sturdyrobot.io-2ea043)](https://sturdyrobot.io)
+&nbsp;[![Live: nlj.dev](https://img.shields.io/badge/live-nlj.dev-2ea043)](https://nlj.dev)
 
-**Live:** [sturdyrobot.io](https://sturdyrobot.io)
+**Live:** [nlj.dev](https://nlj.dev)
 
 **Stack:** React 18 · Vite · Zustand · Zod · three.js + cannon-es · Cloudflare Workers · Web Audio — built **AI-native**, directed with Claude Code. See [AI_SPEC.md](AI_SPEC.md).
 
@@ -155,7 +155,7 @@ and Discord delivery, all behind a one-command deploy.
 - **Backend:** a single PHP script (`leaderboard.php`) for shared high scores.
 - **Persistence:** `localStorage` (theme, pet, score cache); PHP for the global board.
 - **Audio:** Web Audio API — sounds are synthesized, not files.
-- **Hosting:** static build + PHP on Hostinger, served at [sturdyrobot.io](https://sturdyrobot.io).
+- **Hosting:** static build + PHP on Hostinger, served at [nlj.dev](https://nlj.dev).
 
 ---
 

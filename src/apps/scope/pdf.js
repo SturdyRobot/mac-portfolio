@@ -35,9 +35,9 @@ export async function downloadBrief(brief, intake, answers = {}) {
   doc.text(date, W - M, y, { align: 'right' })
   y += 18
   setColor(ACCENT); doc.setFont('helvetica', 'bold'); doc.setFontSize(11)
-  doc.text('Sturdy Robot · Noel Jackson', M, y)
+  doc.text('Noel Jackson · nlj.dev', M, y)
   setColor(MUTE); doc.setFont('helvetica', 'normal'); doc.setFontSize(10)
-  doc.text('noeljacksonjs@gmail.com  ·  sturdyrobot.io', W - M, y, { align: 'right' })
+  doc.text('noel@nlj.dev  ·  nlj.dev', W - M, y, { align: 'right' })
   y += 14
   doc.setDrawColor(ACCENT[0], ACCENT[1], ACCENT[2]); doc.setLineWidth(1.5)
   doc.line(M, y, W - M, y); y += 26
@@ -119,7 +119,7 @@ export async function downloadBrief(brief, intake, answers = {}) {
 
   // ── footer ──
   setColor(MUTE); doc.setFontSize(8.5)
-  doc.text('Let’s talk specifics · sturdyrobot.io · noeljacksonjs@gmail.com', M, doc.internal.pageSize.getHeight() - 32)
+  doc.text('Let’s talk specifics · nlj.dev · noel@nlj.dev', M, doc.internal.pageSize.getHeight() - 32)
 
   const who = (intake.contact.company || intake.contact.name || 'project').replace(/[^\w-]+/g, '-').toLowerCase()
   doc.save(`brief-${who}.pdf`)

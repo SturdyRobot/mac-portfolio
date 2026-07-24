@@ -17,9 +17,9 @@ function Clock() {
   return <span className="menu-clock">{now}</span>
 }
 
-// The corner logo — a robot, not an apple. This is Sturdy Robot OS.
+// The corner logo — a robot, not an apple. This is nlj OS.
 const RobotLogo = () => (
-  <span aria-label="Sturdy Robot menu" style={{ fontSize: 15, lineHeight: 1 }}>🤖</span>
+  <span aria-label="nlj menu" style={{ fontSize: 15, lineHeight: 1 }}>🤖</span>
 )
 
 const renderIcon = (icon) =>
@@ -51,6 +51,7 @@ export default function MenuBar() {
   const setPower = useOS((s) => s.setPower)
   const setIconSort = useOS((s) => s.setIconSort)
   const showDialog = useOS((s) => s.showDialog)
+  const startTour = useOS((s) => s.startTour)
   const hasWindows = useOS((s) => s.windows.length > 0)
 
   const toggle = (name) => setOpen((m) => (m === name ? null : name))
@@ -113,8 +114,8 @@ export default function MenuBar() {
               onClick={run(() =>
                 showDialog({
                   icon: '🤖',
-                  title: 'Sturdy Robot OS',
-                  body: 'System 8 · built from scratch by Sturdy Robot. Memory: ∞.',
+                  title: 'nlj OS',
+                  body: 'System 8 · built from scratch by Noel Jackson. Memory: ∞.',
                 }),
               )}
             />
@@ -215,6 +216,8 @@ export default function MenuBar() {
         </span>
         {open === 'special' && (
           <div className="menu-dropdown">
+            <Row icon="⚡" label="Take the 60-second Tour" onClick={run(() => startTour())} />
+            <Sep />
             <Row
               label="Empty Trash…"
               onClick={run(() =>

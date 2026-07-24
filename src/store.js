@@ -40,6 +40,16 @@ export const useOS = create(
   iconSort: 'default', // default | name | kind
   setIconSort: (iconSort) => set({ iconSort }),
 
+  // ─── Guided tour (the 60-second recruiter auto-tour) ───
+  tour: false,
+  startTour: () => set({ tour: true }),
+  endTour: () => set({ tour: false }),
+  // Remote for the living Terminal: the tour drops a command here and the
+  // Terminal (if open) "types" and runs it against the real engine.
+  terminalCmd: null,
+  runInTerminal: (cmd) => set({ terminalCmd: cmd }),
+  clearTerminalCmd: () => set({ terminalCmd: null }),
+
   openApp: (appId) => {
     const existing = get().windows.find((w) => w.appId === appId)
     if (existing) {
@@ -66,7 +76,10 @@ export const useOS = create(
     // the viewport, then centre framed apps (floating widgets keep their spot).
     const vw = typeof window !== 'undefined' ? window.innerWidth : 1280
     const vh = typeof window !== 'undefined' ? window.innerHeight : 720
-    const small = vw <= 640
+    // phones + small tablets: open framed apps (nearly) full-screen so intake
+    // wizards and the like are actually usable on touch. (Most portfolio traffic
+    // from X/LinkedIn is mobile.)
+    const small = vw <= 768
     let w, h, x, y
     if (small && !app.chromeless) {
       // phones: framed apps open (nearly) full-screen so they're actually usable

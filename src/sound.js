@@ -62,6 +62,15 @@ export function playSound(name) {
         tone(660, 0, 0.06, { type: 'triangle', vol: 0.05 })
         tone(880, 0.06, 0.09, { type: 'triangle', vol: 0.05 })
         break
+      case 'boot': {
+        // warm startup chord (C-E-G-C major) — the "power on" fanfare
+        const V = 0.05
+        tone(261.6, 0.0, 1.7, { type: 'sine', vol: V })
+        tone(329.6, 0.03, 1.7, { type: 'sine', vol: V })
+        tone(392.0, 0.06, 1.7, { type: 'sine', vol: V })
+        tone(523.3, 0.09, 1.8, { type: 'triangle', vol: V * 0.9 })
+        break
+      }
       case 'celebrate': // rare reward fanfare — a little rising arpeggio
         tone(523, 0, 0.1, { type: 'square', vol: 0.05 })
         tone(659, 0.1, 0.1, { type: 'square', vol: 0.05 })

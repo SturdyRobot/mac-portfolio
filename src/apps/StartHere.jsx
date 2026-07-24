@@ -1,11 +1,13 @@
 import { useOS } from '../store.js'
 
-// The first thing a recruiter or client sees. Job: in ~30 seconds — who I am,
-// what level, my edge, proof it's real, and one obvious next step.
-const STACK = ['React', 'Rust', 'Cloudflare', 'three.js', 'TypeScript']
+// The first thing a recruiter or hiring manager sees. Job: in ~30 seconds — who I
+// am, what level, my edge, proof it's real, and one obvious next step. Positioning
+// leads with the systems depth (Rust / WASM / infra), not the frontend.
+const STACK = ['Rust', 'WebAssembly', 'Systems', 'TypeScript', 'Cloudflare']
 
 export default function StartHere() {
   const openApp = useOS((s) => s.openApp)
+  const startTour = useOS((s) => s.startTour)
 
   return (
     <div className="starthere">
@@ -13,41 +15,45 @@ export default function StartHere() {
         <div className="sh-badge">🤖</div>
         <div className="sh-hero-text">
           <h1 className="sh-name">Noel Jackson</h1>
-          <p className="sh-role">AI-native software engineer</p>
+          <p className="sh-role">Systems &amp; AI Infrastructure Engineer</p>
         </div>
       </div>
 
       <p className="sh-lead">
-        I ship <b>production software solo</b> — desktop, web, and edge —
-        directing AI to build and maintain more than one developer normally could.
+        I build <b>deterministic Rust runtimes</b>, WASM execution engines, and AI
+        infrastructure — engineering high-assurance systems from the kernel to the edge.
       </p>
 
       <div className="sh-tags">
         {STACK.map((t) => <span className="sh-tag" key={t}>{t}</span>)}
       </div>
 
-      <button className="sh-cta" onClick={() => openApp('scope')}>
-        <span>Hire me — start a project</span>
+      <a className="sh-cta" href="mailto:noel@nlj.dev">
+        <span>Contact Noel — noel@nlj.dev</span>
         <span className="sh-cta-arrow">→</span>
+      </a>
+
+      <button className="sh-tour" onClick={startTour}>
+        ▶ Short on time? Take the 60-second tour
       </button>
 
       <div className="sh-section-label">Featured work</div>
       <div className="sh-actions">
-        <button className="sh-card" onClick={() => openApp('worldframe')}>
-          <span className="sh-card-emoji">🌍</span>
-          <span className="sh-card-text">
-            <b>WorldFrame</b>
-            <small>My flagship — a desktop worldbuilding app, live and in users&rsquo; hands. Tauri&nbsp;+&nbsp;Rust.</small>
-          </span>
-          <span className="sh-card-tag live">Live ↗</span>
-        </button>
         <button className="sh-card" onClick={() => openApp('kedge')}>
           <span className="sh-card-emoji">🦀</span>
           <span className="sh-card-text">
             <b>Kedge</b>
-            <small>A deterministic AI-agent harness in Rust. It intercepts unsafe actions before they run — try it live.</small>
+            <small>My flagship — a deterministic AI-agent harness in Rust. The real safety classifier, compiled to WebAssembly, intercepts unsafe actions live in your browser.</small>
           </span>
-          <span className="sh-card-tag live">Run it</span>
+          <span className="sh-card-tag live">Run it ↗</span>
+        </button>
+        <button className="sh-card" onClick={() => openApp('worldframe')}>
+          <span className="sh-card-emoji">🌍</span>
+          <span className="sh-card-text">
+            <b>WorldFrame</b>
+            <small>A desktop worldbuilding application built with Tauri&nbsp;+&nbsp;Rust — shipped, and in users&rsquo; hands.</small>
+          </span>
+          <span className="sh-card-tag live">Live ↗</span>
         </button>
         <button className="sh-card" onClick={() => openApp('hub')}>
           <span className="sh-card-emoji">🐙</span>
@@ -64,9 +70,9 @@ export default function StartHere() {
       </p>
 
       <div className="sh-links">
-        <a href="mailto:noeljacksonjs@gmail.com">noeljacksonjs@gmail.com</a>
+        <a href="mailto:noel@nlj.dev">noel@nlj.dev</a>
         <span className="sh-dot">·</span>
-        <a href="https://github.com/SturdyRobot" target="_blank" rel="noopener noreferrer">GitHub&nbsp;↗</a>
+        <a href="https://github.com/nlj3" target="_blank" rel="noopener noreferrer">GitHub&nbsp;↗</a>
         <span className="sh-dot">·</span>
         <a href="https://tryworldframe.com" target="_blank" rel="noopener noreferrer">tryworldframe.com&nbsp;↗</a>
       </div>

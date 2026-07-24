@@ -47,6 +47,9 @@
 }
 .sg-brief:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-weak); }
 
+/* honeypot — kept in-flow-but-invisible & unfocusable; not display:none, which some bots skip */
+.sg-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
 /* feature chips */
 .sg-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .sg-chip {

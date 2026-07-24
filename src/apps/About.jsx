@@ -4,7 +4,7 @@ export default function About() {
       <div className="about-face">☺</div>
       <h2>Hi, I&rsquo;m Noel</h2>
       <p>
-        I&rsquo;m a developer who goes by <b>Sturdy Robot</b> online. I like
+        I&rsquo;m a developer who goes by <b>nlj</b> online. I like
         building things all the way through: the idea, the code, and the small
         details nobody asked for.
       </p>
@@ -17,20 +17,20 @@ export default function About() {
       <p className="about-sig">
         Built by <b>Noel Jackson</b>
         <br />
-        aka <b>Sturdy Robot</b> 🤖
+        aka <b>nlj</b> 🤖
       </p>
       <p className="about-links">
-        <a className="about-link" href="mailto:noeljacksonjs@gmail.com">
-          noeljacksonjs@gmail.com
+        <a className="about-link" href="mailto:noel@nlj.dev">
+          noel@nlj.dev
         </a>
         <br />
         <a
           className="about-link"
-          href="https://github.com/SturdyRobot"
+          href="https://github.com/nlj3"
           target="_blank"
           rel="noopener noreferrer"
         >
-          github.com/SturdyRobot
+          github.com/nlj3
         </a>
       </p>
     </div>

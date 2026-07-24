@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Noel Jackson · SturdyRobot</title>
+<title>Noel Jackson · nlj3</title>
 <style>
   :root{
     --bg:#0d1117; --bg2:#161b22; --border:#30363d; --border2:#21262d;
@@ -110,14 +110,14 @@
     <aside>
       <div class="avatar">🤖</div>
       <div class="name">Noel Jackson</div>
-      <div class="handle">SturdyRobot</div>
+      <div class="handle">nlj3</div>
       <button class="btn follow" onclick="this.textContent='Following ✓'">Follow</button>
-      <p class="bio">Software developer &amp; systems admin. I build apps, tools, and games — and direct AI to help me ship them.</p>
+      <p class="bio">Systems &amp; AI Infrastructure Engineer. I build deterministic Rust runtimes, WASM execution engines, and AI infrastructure — from the kernel to the edge.</p>
       <span class="pill">🟢 Available for work</span>
       <div class="meta">
         <div>📍 On the internet</div>
-        <div>🔗 <a href="https://sturdyrobot.io" target="_blank" rel="noopener noreferrer">sturdyrobot.io</a></div>
-        <div>✉️ <a href="mailto:noeljacksonjs@gmail.com">noeljacksonjs@gmail.com</a></div>
+        <div>🔗 <a href="https://nlj.dev" target="_blank" rel="noopener noreferrer">nlj.dev</a></div>
+        <div>✉️ <a href="mailto:noel@nlj.dev">noel@nlj.dev</a></div>
       </div>
     </aside>
 
@@ -125,27 +125,28 @@
     <main>
       <!-- profile README: the meta-design lives here -->
       <div class="readme">
-        <div class="readme-head">📄 <b>SturdyRobot</b> / README.md</div>
+        <div class="readme-head">📄 <b>nlj3</b> / README.md</div>
         <div class="readme-body">
-          <h2>Hi, I&rsquo;m Noel — &ldquo;Sturdy Robot&rdquo; 🤖</h2>
-          <p>I build apps, tools, and games end-to-end, and I build <b>AI-native</b>: I own the
-          architecture and the decisions, and direct an AI coding agent to implement, test, and
-          generate assets — shipping fast <i>without</i> dropping the quality bar.</p>
+          <h2>Hi, I&rsquo;m Noel — &ldquo;nlj&rdquo; 🤖</h2>
+          <p>I build <b>deterministic Rust runtimes</b>, WASM execution engines, and AI
+          infrastructure — high-assurance systems from the kernel to the edge. I ship production
+          software solo: I own the architecture, and direct AI to implement against contracts I
+          design and verify.</p>
           <p>Everything pinned below is real and runs. The retro desktop you&rsquo;re looking at
           this through is one of them.</p>
           <h3>How I work</h3>
           <p>Design the contracts myself → let AI draft against them → test, review, and reject what&rsquo;s
           wrong → verify every change in a real browser before it lands. The tooling I build reflects the
-          same idea: <a href="https://github.com/SturdyRobot/kedge" target="_blank" rel="noopener noreferrer">Kedge</a>
+          same idea: <a href="https://github.com/nlj3/kedge" target="_blank" rel="noopener noreferrer">Kedge</a>
           runs AI agents under hard budgets with byte-identical replay, so a change&rsquo;s effect is
           <i>verifiable</i>, not vibes.</p>
           <div class="chips">
-            <span class="chip">Rust</span><span class="chip">React</span><span class="chip">TypeScript</span>
-            <span class="chip">Node</span><span class="chip">Systems</span><span class="chip">Game dev</span>
-            <span class="chip">AI-native workflow</span>
+            <span class="chip">Rust</span><span class="chip">WebAssembly</span><span class="chip">Systems</span>
+            <span class="chip">TypeScript</span><span class="chip">Cloudflare</span><span class="chip">Tauri</span>
+            <span class="chip">AI infrastructure</span>
           </div>
-          <div class="kv">🌐 <a href="https://sturdyrobot.io" target="_blank" rel="noopener noreferrer">sturdyrobot.io</a>
-            &nbsp;·&nbsp; ✉️ <a href="mailto:noeljacksonjs@gmail.com">noeljacksonjs@gmail.com</a></div>
+          <div class="kv">🌐 <a href="https://nlj.dev" target="_blank" rel="noopener noreferrer">nlj.dev</a>
+            &nbsp;·&nbsp; ✉️ <a href="mailto:noel@nlj.dev">noel@nlj.dev</a></div>
         </div>
       </div>
 
@@ -175,25 +176,25 @@
   const REPOS = [
     { name:'kedge', lang:'Rust', color:'var(--rust)', badge:'Public',
       desc:'Deterministic AI-agent harness in Rust. Shadow-Guard intercepts destructive tool calls before they run; AST compaction cuts context ~60%. MCP server, SQLite replay, runs in your browser.',
-      href:'https://github.com/SturdyRobot/kedge', ext:'github.com' },
+      href:'https://github.com/nlj3/kedge', ext:'github.com' },
     { name:'mac-portfolio', lang:'JavaScript', color:'var(--js)', badge:'Public',
       desc:'This desktop. A portfolio built as a working retro desktop OS — a pluggable app + game platform.',
-      href:'https://github.com/SturdyRobot/mac-portfolio', ext:'github.com' },
+      href:'https://github.com/nlj3/mac-portfolio', ext:'github.com' },
     { name:'ai-intake-pipeline', lang:'JavaScript · Zod', color:'var(--js)', badge:'in mac-portfolio',
       desc:'Adaptive client intake → an LLM asks the questions each project actually needs → a tier-classified, priced lead lands in Discord — pricing computed server-side so the client never sees it. Groq + Cloudflare Worker, Zod-validated end to end.',
-      href:'https://github.com/SturdyRobot/mac-portfolio/tree/main/src/apps/scope', ext:'source' },
+      href:'https://github.com/nlj3/mac-portfolio/tree/main/src/apps/scope', ext:'source' },
     { name:'worldframe', lang:'Rust · React', color:'var(--react)', badge:'Product',
       desc:'Worldbuilding app for writers & TTRPG creators. My flagship — a Tauri desktop app.',
       href:'https://tryworldframe.com', ext:'tryworldframe.com' },
     { name:'zenomon', lang:'JavaScript', color:'var(--js)', badge:'in mac-portfolio',
       desc:'Single-file monster-breeding sim — genome splicing, IV/EV stats, auto-battle, prestige, daily rewards.',
-      href:'https://github.com/SturdyRobot/mac-portfolio/tree/main/public/games/zenomon', ext:'source' },
+      href:'https://github.com/nlj3/mac-portfolio/tree/main/public/games/zenomon', ext:'source' },
     { name:'raid-clicker', lang:'JavaScript', color:'var(--js)', badge:'in mac-portfolio',
       desc:'Tarkov-style extraction-looter incremental — loadouts, survivability, raids, stash, season wipes.',
-      href:'https://github.com/SturdyRobot/mac-portfolio/tree/main/public/games/raid', ext:'source' },
+      href:'https://github.com/nlj3/mac-portfolio/tree/main/public/games/raid', ext:'source' },
     { name:'rc-playground', lang:'JavaScript', color:'var(--js)', badge:'in mac-portfolio',
       desc:'3D driving time-trial with real physics — three.js + cannon-es (suspension, jumps, lap timer).',
-      href:'https://github.com/SturdyRobot/mac-portfolio/tree/main/public/games/playground', ext:'source' },
+      href:'https://github.com/nlj3/mac-portfolio/tree/main/public/games/playground', ext:'source' },
   ];
   const grid = document.getElementById('repos');
   REPOS.forEach(r=>{

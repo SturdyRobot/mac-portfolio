@@ -12,6 +12,9 @@ compatibility_date = "2025-01-01"
 ALLOW_ORIGIN = "https://sturdyrobot.io,https://www.sturdyrobot.io"
 GROQ_MODEL = "llama-3.3-70b-versatile"
 RATE_MAX = "5"
+# Your current utilization knob for the internal estimate — set it as you get busy:
+#   0.85 = slow (fill slots) · 1.0 = normal · 1.30 = busy · 1.60 = slammed
+CAPACITY_MULT = "1.0"
 
 # Per-IP rate-limit counter.
 [[kv_namespaces]]

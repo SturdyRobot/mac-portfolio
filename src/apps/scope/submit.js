@@ -29,6 +29,7 @@ export function buildLead(intake, brief, answers = {}) {
     qa,
     notes: intake.brief || '',
     contact: intake.contact,
+    website: intake.website || '', // honeypot — Worker drops the lead if a bot filled it
     // raw ids so the Worker can compute the internal estimate + tier server-side
     // (the client never receives or sees a price)
     raw: {
